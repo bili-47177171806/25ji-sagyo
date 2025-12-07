@@ -923,18 +923,18 @@
         musicList.innerHTML = '<div class="loading">加载音乐列表中...</div>';
         
         // Fetch musics.json
-        const musicsResponse = await fetch('https://storage.nightcord.de5.net/musics.json');
+        const musicsResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/musics.json');
         if (!musicsResponse.ok) throw new Error('Failed to fetch musics');
         musicData = await musicsResponse.json();
         
         // Fetch musicVocals.json
-        const vocalsResponse = await fetch('https://storage.nightcord.de5.net/musicVocals.json');
+        const vocalsResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/musicVocals.json');
         if (!vocalsResponse.ok) throw new Error('Failed to fetch music vocals');
         musicVocalsData = await vocalsResponse.json();
         
         // Fetch Chinese translations
         try {
-          const titlesResponse = await fetch('https://storage.nightcord.de5.net/music_titles.json');
+          const titlesResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/music_titles.json');
           if (titlesResponse.ok) {
             musicTitlesZhCN = await titlesResponse.json();
           }
