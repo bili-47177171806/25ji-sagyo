@@ -1,0 +1,35 @@
+name: Sync JSON to OSS
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download JSON files
+        run: |
+          curl -o musics.json "https://sekai-world.github.io/sekai-master-db-diff/musics.json"
+          curl -o musicVocals.json "https://sekai-world.github.io/sekai-master-db-diff/musicVocals.json"
+          curl -o music_titles.json "https://i18n-json.sekai.best/zh-CN/music_titles.json"
+          
+      - name: Install ossutil
+        run: |
+          curl -o ossutil https://gosspublic.alicdn.com/ossutil/1.7.18/ossutil-v1.7.18-linux-amd64
+          chmod +x ossutil
+          
+      - name: Configure ossutil
+        run: |
+          ./ossutil config \
+            -e oss-cn-shanghai.aliyuncs.com \
+            -i ${{ secrets.OSS_ACCESS_KEY_ID }} \
+            -k ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+            
+      - name: Upload to OSS
+        run: |
+          ./ossutil cp -f musics.json oss://pj-sekai/musics.json
+          ./ossutil cp -f musicVocals.json oss://pj-sekai/musicVocals.json
+          ./ossutil cp -f music_titles.json oss://pj-sekai/music_titles.json
