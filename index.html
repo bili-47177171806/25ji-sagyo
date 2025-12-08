@@ -118,11 +118,40 @@
         <div class="cd-player-body">
           <!-- Music List -->
           <div class="music-list-section">
-            <div class="music-search">
-              <input type="text" id="musicSearchInput" placeholder="搜索歌曲..." />
+            <!-- Category Sidebar -->
+            <div class="music-categories" id="musicCategories">
+              <button class="category-btn active" data-category="all" title="全部歌曲">🎵</button>
+              <button class="category-btn" data-category="favorites" title="我喜欢的音乐">⭐</button>
+              <button class="category-btn" data-category="playlists" title="我的歌单">📂</button>
+              <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 8px;"></div>
+              <button class="category-btn" data-category="virtual_singer" title="Virtual Singer">
+                <img src="https://pj-sekai.oss-cn-shanghai.aliyuncs.com/unit_logos/vs.webp" alt="VS" />
+              </button>
+              <button class="category-btn" data-category="leo_need" title="Leo/need">
+                <img src="https://pj-sekai.oss-cn-shanghai.aliyuncs.com/unit_logos/ln.webp" alt="L/n" />
+              </button>
+              <button class="category-btn" data-category="more_more_jump" title="MORE MORE JUMP!">
+                <img src="https://pj-sekai.oss-cn-shanghai.aliyuncs.com/unit_logos/mmj.webp" alt="MMJ" />
+              </button>
+              <button class="category-btn" data-category="vivid_bad_squad" title="Vivid BAD SQUAD">
+                <img src="https://pj-sekai.oss-cn-shanghai.aliyuncs.com/unit_logos/vbs.webp" alt="VBS" />
+              </button>
+              <button class="category-btn" data-category="wonderlands_x_showtime" title="Wonderlands×Showtime">
+                <img src="https://pj-sekai.oss-cn-shanghai.aliyuncs.com/unit_logos/ws.webp" alt="WxS" />
+              </button>
+              <button class="category-btn" data-category="25_ji_nightcord_de" title="25时，在Nightcord。">
+                <img src="https://pj-sekai.oss-cn-shanghai.aliyuncs.com/unit_logos/25ji.webp" alt="25时" />
+              </button>
+              <button class="category-btn" data-category="other" title="其他">📀</button>
             </div>
-            <div class="music-list" id="musicList">
-              <div class="loading">加载中...</div>
+
+            <div class="music-list-container">
+              <div class="music-search">
+                <input type="text" id="musicSearchInput" placeholder="搜索歌曲..." />
+              </div>
+              <div class="music-list" id="musicList">
+                <div class="loading">加载中...</div>
+              </div>
             </div>
           </div>
 

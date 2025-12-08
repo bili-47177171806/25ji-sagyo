@@ -805,12 +805,16 @@
     };
     let filteredMusicData = [];
     let currentTrackIndex = -1;
+    let currentMusicId = null; // Currently playing music ID (for tracking across category changes)
     let currentVocalId = null; // Currently selected vocal version
     let preferredVocalType = 'sekai'; // Default preference
     let isPlaying = false;
     let isShuffleOn = false;
     let isRepeatOn = false;
     let pendingAutoPlay = false; // Flag to track if we should auto-play after loading
+    let favorites = new Set(); // Set of favorite music IDs
+    let playlists = []; // Array of { id, name, tracks: Set(musicIds) }
+    let currentCategory = 'all'; // Current selected category or playlist ID
 
     // LocalStorage keys for CD Player
     const STORAGE_KEYS = {
@@ -818,7 +822,9 @@
       LAST_TRACK: 'cdPlayer_lastTrack',
       SHUFFLE: 'cdPlayer_shuffle',
       REPEAT: 'cdPlayer_repeat',
-      VOCAL_PREFERENCE: 'cdPlayer_vocalPreference'
+      VOCAL_PREFERENCE: 'cdPlayer_vocalPreference',
+      FAVORITES: 'cdPlayer_favorites',
+      PLAYLISTS: 'cdPlayer_playlists'
     };
 
     // Save settings to localStorage
@@ -829,6 +835,15 @@
         localStorage.setItem(STORAGE_KEYS.SHUFFLE, isShuffleOn);
         localStorage.setItem(STORAGE_KEYS.REPEAT, isRepeatOn);
         localStorage.setItem(STORAGE_KEYS.VOCAL_PREFERENCE, preferredVocalType);
+        localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify([...favorites]));
+        
+        // Serialize playlists (convert Sets to Arrays)
+        const serializedPlaylists = playlists.map(p => ({
+          id: p.id,
+          name: p.name,
+          tracks: [...p.tracks]
+        }));
+        localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(serializedPlaylists));
       } catch (e) {
         console.warn('Failed to save CD player settings:', e);
       }
@@ -862,6 +877,21 @@
           preferredVocalType = savedVocalPref;
         }
 
+        const savedFavorites = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+        if (savedFavorites !== null) {
+          favorites = new Set(JSON.parse(savedFavorites));
+        }
+
+        const savedPlaylists = localStorage.getItem(STORAGE_KEYS.PLAYLISTS);
+        if (savedPlaylists !== null) {
+          const parsed = JSON.parse(savedPlaylists);
+          playlists = parsed.map(p => ({
+            id: p.id,
+            name: p.name,
+            tracks: new Set(p.tracks)
+          }));
+        }
+
         const savedTrack = localStorage.getItem(STORAGE_KEYS.LAST_TRACK);
         if (savedTrack !== null) {
           const trackIndex = parseInt(savedTrack);
@@ -872,6 +902,333 @@
         console.warn('Failed to load CD player settings:', e);
       }
       return null;
+    }
+
+    // Helper to determine music category
+    function getMusicCategory(music) {
+      // Map categories based on Sekai logic
+
+      // 1. Check for Sekai Unit (Human vocals)
+      // A song belongs to a unit if it has a 'sekai' version sung by that unit.
+      const sekaiVocal = musicVocalsData.find(v => v.musicId === music.id && v.musicVocalType === 'sekai');
+      if (sekaiVocal) {
+        // Get all game character IDs
+        const charIds = sekaiVocal.characters
+          .filter(c => c.characterType === 'game_character')
+          .map(c => c.characterId);
+        
+        if (charIds.length === 0) {
+          // No game characters
+          return 'other';
+        }
+        
+        // Check if this is a cross-unit collaboration (characters from multiple units)
+        const units = new Set();
+        charIds.forEach(id => {
+          if (id >= 1 && id <= 4) units.add('leo_need');
+          else if (id >= 5 && id <= 8) units.add('more_more_jump');
+          else if (id >= 9 && id <= 12) units.add('vivid_bad_squad');
+          else if (id >= 13 && id <= 16) units.add('wonderlands_x_showtime');
+          else if (id >= 17 && id <= 20) units.add('25_ji_nightcord_de');
+        });
+        
+        // If multiple units are involved, it's a cross-unit collaboration -> Other
+        if (units.size > 1) {
+          return 'other';
+        }
+        
+        // Single unit song
+        if (units.has('leo_need')) return 'leo_need';
+        if (units.has('more_more_jump')) return 'more_more_jump';
+        if (units.has('vivid_bad_squad')) return 'vivid_bad_squad';
+        if (units.has('wonderlands_x_showtime')) return 'wonderlands_x_showtime';
+        if (units.has('25_ji_nightcord_de')) return '25_ji_nightcord_de';
+      }
+      
+      // 2. Special check: If music has vocals but all vocals have empty or missing characters
+      // (Like some special event songs that have vocals but no credited singers)
+      const allVocals = musicVocalsData.filter(v => 
+        v.musicId === music.id && 
+        v.musicVocalType !== 'instrumental'
+      );
+      
+      if (allVocals.length > 0) {
+        // Check if ALL vocals have no characters
+        const allHaveNoCharacters = allVocals.every(v => 
+          !v.characters || v.characters.length === 0
+        );
+        
+        if (allHaveNoCharacters) {
+          // All vocals exist but none have credited singers -> Other
+          return 'other';
+        }
+        
+        // Has vocals with characters -> Virtual Singer
+        return 'virtual_singer';
+      }
+
+      // 3. No vocals at all (pure instrumental) -> Other
+      return 'other';
+    }
+
+    // Filter music list based on category and search
+    function filterMusicList(query = '') {
+      let list = musicData.filter(music => {
+          // Find any vocal for this music
+          const hasVocal = musicVocalsData.some(
+            vocal => vocal.musicId === music.id
+          );
+          return hasVocal;
+      });
+
+      // Filter by category
+      if (currentCategory === 'favorites') {
+        list = list.filter(music => favorites.has(music.id));
+      } else if (currentCategory === 'playlists') {
+        // Special case: handled by displayPlaylists, but if we are here, it means we are searching
+        // or filtering within "all playlists" context? No, 'playlists' category shows playlist grid.
+        // If currentCategory is a specific playlist ID:
+      } else if (currentCategory.startsWith('playlist_')) {
+        const playlistId = currentCategory;
+        const playlist = playlists.find(p => p.id === playlistId);
+        if (playlist) {
+          list = list.filter(music => playlist.tracks.has(music.id));
+        } else {
+          list = [];
+        }
+      } else if (currentCategory !== 'all') {
+        list = list.filter(music => getMusicCategory(music) === currentCategory);
+      }
+
+      // Filter by search query
+      if (query) {
+        list = list.filter(music => {
+          const zhTitle = musicTitlesZhCN[music.id];
+          return music.title.toLowerCase().includes(query) ||
+            (music.pronunciation && music.pronunciation.toLowerCase().includes(query)) ||
+            (music.lyricist && music.lyricist.toLowerCase().includes(query)) ||
+            (music.composer && music.composer.toLowerCase().includes(query)) ||
+            (zhTitle && zhTitle.toLowerCase().includes(query));
+        });
+      }
+      
+      filteredMusicData = list;
+      displayMusicList(filteredMusicData);
+    }
+
+    // Playlist Management Functions
+    function createPlaylist() {
+      const name = prompt('请输入歌单名称:');
+      if (name && name.trim()) {
+        const id = 'playlist_' + Date.now();
+        playlists.push({
+          id: id,
+          name: name.trim(),
+          tracks: new Set()
+        });
+        saveSettings();
+        displayPlaylists();
+      }
+    }
+
+    function deletePlaylist(id) {
+      if (confirm('确定要删除这个歌单吗？')) {
+        playlists = playlists.filter(p => p.id !== id);
+        saveSettings();
+        displayPlaylists();
+      }
+    }
+
+    function addToPlaylist(musicId, buttonElement) {
+      // Close any other open dropdowns
+      document.querySelectorAll('.playlist-dropdown.show').forEach(dropdown => {
+        dropdown.classList.remove('show');
+      });
+      
+      // Show simple modal or prompt to select playlist
+      if (playlists.length === 0) {
+        if (confirm('还没有创建歌单，是否现在创建？')) {
+          createPlaylist();
+        }
+        return;
+      }
+
+      // Create dropdown for selection
+      const dropdown = document.createElement('div');
+      dropdown.className = 'playlist-dropdown show';
+      
+      playlists.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'playlist-dropdown-item';
+        const isAdded = p.tracks.has(musicId);
+        
+        const icon = document.createElement('span');
+        icon.className = 'playlist-dropdown-icon';
+        icon.textContent = '📂';
+        
+        const name = document.createElement('span');
+        name.className = 'playlist-dropdown-name';
+        name.textContent = p.name;
+        
+        const check = document.createElement('span');
+        check.className = 'playlist-dropdown-check';
+        check.textContent = isAdded ? '✓' : '';
+        
+        item.appendChild(icon);
+        item.appendChild(name);
+        item.appendChild(check);
+        
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (isAdded) {
+            p.tracks.delete(musicId);
+          } else {
+            p.tracks.add(musicId);
+          }
+          saveSettings();
+          dropdown.remove();
+          // Refresh list if we are currently viewing this playlist
+          if (currentCategory === p.id) {
+            filterMusicList(musicSearchInput ? musicSearchInput.value.toLowerCase().trim() : '');
+          }
+        });
+        
+        dropdown.appendChild(item);
+      });
+      
+      // New playlist option
+      const newItem = document.createElement('div');
+      newItem.className = 'playlist-dropdown-item create-new';
+      
+      const newIcon = document.createElement('span');
+      newIcon.className = 'playlist-dropdown-icon';
+      newIcon.textContent = '+';
+      
+      const newName = document.createElement('span');
+      newName.className = 'playlist-dropdown-name';
+      newName.textContent = '新建歌单';
+      
+      newItem.appendChild(newIcon);
+      newItem.appendChild(newName);
+      
+      newItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.remove();
+        createPlaylist();
+      });
+      
+      dropdown.appendChild(newItem);
+
+      // Position dropdown relative to the button
+      const actionsContainer = buttonElement.closest('.music-item-actions');
+      if (actionsContainer) {
+        actionsContainer.appendChild(dropdown);
+      }
+      
+      // Close dropdown when clicking outside - use capture phase and check immediately
+      const closeDropdown = (e) => {
+        // Check if dropdown still exists in DOM
+        if (!document.body.contains(dropdown)) {
+          document.removeEventListener('click', closeDropdown, true);
+          return;
+        }
+        
+        // Check if click is outside both the dropdown and the button
+        if (!dropdown.contains(e.target) && !buttonElement.contains(e.target)) {
+          dropdown.classList.remove('show');
+          setTimeout(() => {
+            if (document.body.contains(dropdown)) {
+              dropdown.remove();
+            }
+          }, 150); // Wait for animation
+          document.removeEventListener('click', closeDropdown, true);
+        }
+      };
+      
+      // Add listener in next tick to avoid immediate trigger
+      setTimeout(() => {
+        document.addEventListener('click', closeDropdown, true); // Use capture phase
+      }, 0);
+      
+      // Also close when pressing Escape key
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          dropdown.classList.remove('show');
+          setTimeout(() => dropdown.remove(), 150);
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    function displayPlaylists() {
+      musicList.innerHTML = '';
+      
+      const grid = document.createElement('div');
+      grid.className = 'playlist-grid';
+      
+      // Create New Card
+      const createCard = document.createElement('div');
+      createCard.className = 'playlist-card create-new';
+      createCard.innerHTML = `
+        <div class="playlist-icon">✚</div>
+        <div class="playlist-name">新建歌单</div>
+      `;
+      createCard.addEventListener('click', createPlaylist);
+      grid.appendChild(createCard);
+      
+      // Playlist Cards
+      playlists.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'playlist-card';
+        card.innerHTML = `
+          <div class="playlist-icon">📂</div>
+          <div class="playlist-name">${p.name}</div>
+          <div class="playlist-count">${p.tracks.size} 首歌曲</div>
+        `;
+        
+        // Right click to delete
+        card.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          deletePlaylist(p.id);
+        });
+        
+        card.addEventListener('click', () => {
+          currentCategory = p.id;
+          // Update active category button visually (none of the main ones)
+          document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+          // Maybe highlight the playlist folder button?
+          const plBtn = document.querySelector('.category-btn[data-category="playlists"]');
+          if (plBtn) plBtn.classList.add('active');
+          
+          filterMusicList('');
+        });
+        
+        grid.appendChild(card);
+      });
+      
+      musicList.appendChild(grid);
+    }
+
+    // Toggle favorite
+    function toggleFavorite(musicId, btn) {
+      if (favorites.has(musicId)) {
+        favorites.delete(musicId);
+        btn.classList.remove('active');
+        btn.textContent = '☆';
+        btn.title = '添加到收藏';
+      } else {
+        favorites.add(musicId);
+        btn.classList.add('active');
+        btn.textContent = '★';
+        btn.title = '取消收藏';
+      }
+      saveSettings();
+      
+      // If currently viewing favorites, refresh list
+      if (currentCategory === 'favorites') {
+        filterMusicList(musicSearchInput ? musicSearchInput.value.toLowerCase().trim() : '');
+      }
     }
 
     // Check if a music has a specific vocal type
@@ -943,15 +1300,8 @@
         }
         
         // Filter and prepare music list
-        filteredMusicData = musicData.filter(music => {
-          // Find any vocal for this music
-          const hasVocal = musicVocalsData.some(
-            vocal => vocal.musicId === music.id
-          );
-          return hasVocal;
-        });
-        
-        displayMusicList(filteredMusicData);
+        // Initial filter (just to populate filteredMusicData correctly for the first time)
+        filterMusicList('');
         
         // Load saved settings and restore last track
         loadSettings();
@@ -977,7 +1327,8 @@
       list.forEach((music, index) => {
         const item = document.createElement('div');
         item.className = 'music-item';
-        if (currentTrackIndex === filteredMusicData.indexOf(music)) {
+        // Use music.id to determine if this is the currently playing track
+        if (currentMusicId === music.id) {
           item.classList.add('active');
         }
         
@@ -985,42 +1336,94 @@
         const displayTitle = music.title;
         const displayArtist = music.composer || 'Unknown';
         
+        const isFav = favorites.has(music.id);
+        
         item.innerHTML = `
-          <div class="music-item-title">${displayTitle}</div>
-          <div class="music-item-artist">${displayArtist}</div>
+          <div class="music-item-content">
+            <div class="music-item-title" data-full-text="${displayTitle.replace(/"/g, '&quot;')}">${displayTitle}</div>
+            <div class="music-item-artist">${displayArtist}</div>
+          </div>
+          <div class="music-item-actions">
+            <button class="add-to-playlist-btn" title="添加到歌单">✚</button>
+            <button class="favorite-btn ${isFav ? 'active' : ''}" title="${isFav ? '取消收藏' : '添加到我喜欢的音乐'}">
+              ${isFav ? '★' : '☆'}
+            </button>
+          </div>
         `;
         
-        item.addEventListener('click', () => {
+        // Check if title is too long and add scrolling animation
+        const titleElement = item.querySelector('.music-item-title');
+        const contentElement = item.querySelector('.music-item-content');
+        
+        // Wait for DOM to render to measure width
+        requestAnimationFrame(() => {
+          const containerWidth = contentElement.clientWidth;
+          const textWidth = titleElement.scrollWidth;
+          
+          if (textWidth > containerWidth) {
+            titleElement.classList.add('scrolling');
+            // Allow overflow to show scrolling text
+            contentElement.style.overflow = 'visible';
+            
+            // Calculate how much to scroll: move left by (textWidth - containerWidth)
+            // This ensures the entire text becomes visible
+            const scrollDistance = -(textWidth - containerWidth);
+            titleElement.style.setProperty('--scroll-distance', `${scrollDistance}px`);
+          }
+        });
+        
+        // Click on item content to play
+        const content = item.querySelector('.music-item-content');
+        content.addEventListener('click', () => {
           const trackIndex = filteredMusicData.indexOf(music);
           pendingAutoPlay = true; // Set flag to auto-play after loading
           loadTrack(trackIndex);
+        });
+        
+        // Click on add to playlist button
+        const addBtn = item.querySelector('.add-to-playlist-btn');
+        addBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          addToPlaylist(music.id, addBtn);
+        });
+        
+        // Click on favorite button
+        const favBtn = item.querySelector('.favorite-btn');
+        favBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleFavorite(music.id, favBtn);
         });
         
         musicList.appendChild(item);
       });
     }
 
+    // Category buttons
+    const categoryBtns = document.querySelectorAll('.category-btn');
+    categoryBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update active state
+        categoryBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Update category and filter
+        const cat = btn.dataset.category;
+        
+        if (cat === 'playlists') {
+          currentCategory = 'playlists';
+          displayPlaylists();
+        } else {
+          currentCategory = cat;
+          filterMusicList(musicSearchInput ? musicSearchInput.value.toLowerCase().trim() : '');
+        }
+      });
+    });
+
     // Search functionality
     if (musicSearchInput) {
       musicSearchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase().trim();
-        if (!query) {
-          displayMusicList(filteredMusicData);
-          return;
-        }
-        
-        const filtered = filteredMusicData.filter(music => {
-          // Get Chinese title if available
-          const zhTitle = musicTitlesZhCN[music.id];
-          
-          return music.title.toLowerCase().includes(query) ||
-            (music.pronunciation && music.pronunciation.toLowerCase().includes(query)) ||
-            (music.lyricist && music.lyricist.toLowerCase().includes(query)) ||
-            (music.composer && music.composer.toLowerCase().includes(query)) ||
-            (zhTitle && zhTitle.toLowerCase().includes(query));
-        });
-        
-        displayMusicList(filtered);
+        filterMusicList(query);
       });
     }
 
@@ -1042,6 +1445,7 @@
       
       currentTrackIndex = index;
       const music = filteredMusicData[index];
+      currentMusicId = music.id; // Track the current music ID
 
       // Show loading spinner
       if (trackLoadingSpinner) trackLoadingSpinner.classList.remove('hidden');
@@ -1202,9 +1606,14 @@
         });
       }
       
-      // Update active item in list
-      document.querySelectorAll('.music-item').forEach((item, idx) => {
-        item.classList.toggle('active', idx === index);
+      // Update active item in list (use music ID instead of index)
+      document.querySelectorAll('.music-item').forEach((item) => {
+        // We already set the active class based on currentMusicId in displayMusicList
+        // But we need to update it here as well in case the list wasn't re-rendered
+        const itemContent = item.querySelector('.music-item-content');
+        const itemIndex = Array.from(item.parentElement.children).indexOf(item);
+        const itemMusic = filteredMusicData[itemIndex];
+        item.classList.toggle('active', itemMusic && itemMusic.id === music.id);
       });
       
       // Save current track index to localStorage
