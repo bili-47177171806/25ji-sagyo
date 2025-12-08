@@ -1019,6 +1019,103 @@
       displayMusicList(filteredMusicData);
     }
 
+    // IndexedDB for persisting local music files
+    const DB_NAME = 'LocalMusicDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'localMusic';
+    let db = null;
+
+    // Initialize IndexedDB
+    async function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => {
+          console.error('IndexedDB error:', request.error);
+          reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+          db = request.result;
+          resolve(db);
+        };
+        
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+      });
+    }
+
+    // Save local music to IndexedDB
+    async function saveLocalMusicToDB(musicInfo) {
+      if (!db) await initDB();
+      
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        
+        // Store the complete music info including the file
+        const request = store.put(musicInfo);
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    // Load all local music from IndexedDB
+    async function loadLocalMusicFromDB() {
+      if (!db) await initDB();
+      
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+          const items = request.result;
+          // Recreate audioUrl from stored file
+          items.forEach(item => {
+            if (item.file) {
+              item.audioUrl = URL.createObjectURL(item.file);
+            }
+          });
+          resolve(items);
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    // Delete local music from IndexedDB
+    async function deleteLocalMusicFromDB(id) {
+      if (!db) await initDB();
+      
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(id);
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    // Initialize DB and load saved local music on startup
+    (async () => {
+      try {
+        await initDB();
+        const savedMusic = await loadLocalMusicFromDB();
+        if (savedMusic.length > 0) {
+          localMusicData.push(...savedMusic);
+          console.log(`Loaded ${savedMusic.length} local music files from database`);
+        }
+      } catch (error) {
+        console.error('Failed to load local music from database:', error);
+      }
+    })();
+
     // Dynamically load jsmediatags library
     let jsMediaTagsLoaded = false;
     async function loadJsMediaTags() {
@@ -1127,6 +1224,13 @@
           }
           
           localMusicData.push(musicInfo);
+          
+          // Save to IndexedDB for persistence
+          try {
+            await saveLocalMusicToDB(musicInfo);
+          } catch (error) {
+            console.error('Failed to save music to database:', error);
+          }
         }
         
         // Refresh list if currently viewing local music
@@ -1467,7 +1571,7 @@
           tip.style.padding = '20px';
           tip.style.textAlign = 'center';
           tip.style.color = 'rgba(255,255,255,0.5)';
-          tip.textContent = '支持 MP3, FLAC, WAV 等格式。刷新页面后列表会清空。';
+          tip.textContent = '支持 MP3, FLAC, WAV 等格式';
           musicList.appendChild(tip);
           return;
         }
@@ -1501,11 +1605,15 @@
             <div class="music-item-title" data-full-text="${displayTitle.replace(/"/g, '&quot;')}">${displayTitle}</div>
             <div class="music-item-artist">${displayArtist}</div>
           </div>
-          <div class="music-item-actions" style="${isLocal ? 'display: none;' : ''}">
-            <button class="add-to-playlist-btn" title="添加到歌单">✚</button>
-            <button class="favorite-btn ${isFav ? 'active' : ''}" title="${isFav ? '取消收藏' : '添加到我喜欢的音乐'}">
-              ${isFav ? '★' : '☆'}
-            </button>
+          <div class="music-item-actions" style="${isLocal ? '' : ''}">
+            ${isLocal ? `
+              <button class="delete-local-btn" title="删除">🗑️</button>
+            ` : `
+              <button class="add-to-playlist-btn" title="添加到歌单">✚</button>
+              <button class="favorite-btn ${isFav ? 'active' : ''}" title="${isFav ? '取消收藏' : '添加到我喜欢的音乐'}">
+                ${isFav ? '★' : '☆'}
+              </button>
+            `}
           </div>
         `;
         
@@ -1538,19 +1646,62 @@
           loadTrack(trackIndex);
         });
         
-        // Click on add to playlist button
-        const addBtn = item.querySelector('.add-to-playlist-btn');
-        addBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          addToPlaylist(music.id, addBtn);
-        });
-        
-        // Click on favorite button
-        const favBtn = item.querySelector('.favorite-btn');
-        favBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          toggleFavorite(music.id, favBtn);
-        });
+        // Handle local music delete button
+        if (isLocal) {
+          const deleteBtn = item.querySelector('.delete-local-btn');
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              if (confirm(`确定要删除「${music.title}」吗？`)) {
+                try {
+                  // Remove from IndexedDB
+                  await deleteLocalMusicFromDB(music.id);
+                  
+                  // Remove from local array
+                  const idx = localMusicData.findIndex(m => m.id === music.id);
+                  if (idx !== -1) {
+                    // Revoke object URL to free memory
+                    if (localMusicData[idx].audioUrl) {
+                      URL.revokeObjectURL(localMusicData[idx].audioUrl);
+                    }
+                    localMusicData.splice(idx, 1);
+                  }
+                  
+                  // Refresh list
+                  filterMusicList(musicSearchInput ? musicSearchInput.value.toLowerCase().trim() : '');
+                  
+                  // Stop playback if this was the current track
+                  if (currentMusicId === music.id) {
+                    pauseTrack();
+                    currentTrackIndex = -1;
+                    currentMusicId = null;
+                  }
+                } catch (error) {
+                  console.error('Failed to delete music:', error);
+                  alert('删除失败，请重试');
+                }
+              }
+            });
+          }
+        } else {
+          // Click on add to playlist button
+          const addBtn = item.querySelector('.add-to-playlist-btn');
+          if (addBtn) {
+            addBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              addToPlaylist(music.id, addBtn);
+            });
+          }
+          
+          // Click on favorite button
+          const favBtn = item.querySelector('.favorite-btn');
+          if (favBtn) {
+            favBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              toggleFavorite(music.id, favBtn);
+            });
+          }
+        }
         
         musicList.appendChild(item);
       });
