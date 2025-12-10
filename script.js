@@ -820,6 +820,7 @@
     const cdPlayerBtn = document.getElementById('cdPlayerBtn');
     const cdPlayerPanel = document.getElementById('cdPlayerPanel');
     const cdPlayerCloseBtn = document.getElementById('cdPlayerCloseBtn');
+    const toggleVisualizationBtn = document.getElementById('toggleVisualization');
     const musicList = document.getElementById('musicList');
     const musicSearchInput = document.getElementById('musicSearchInput');
     const albumCover = document.getElementById('albumCover');
@@ -2036,6 +2037,63 @@
     let canvasCtx = visualizerCanvas ? visualizerCanvas.getContext('2d') : null;
     let animationId = null;
     let dominantColors = []; // Store extracted colors from album cover
+    let visualizationEnabled = false; // Track visualization state
+
+    // Toggle visualization visibility and performance
+    function toggleVisualization() {
+      visualizationEnabled = !visualizationEnabled;
+      
+      if (visualizerCanvas) {
+        visualizerCanvas.classList.toggle('hidden', !visualizationEnabled);
+      }
+      
+      if (toggleVisualizationBtn) {
+        toggleVisualizationBtn.classList.toggle('active', visualizationEnabled);
+      }
+      
+      // Stop animation when disabled to save performance
+      if (!visualizationEnabled && animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+        // Clear canvas
+        if (canvasCtx && visualizerCanvas) {
+          canvasCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+        }
+      } else if (visualizationEnabled && isPlaying && analyser) {
+        // Resume animation when re-enabled
+        drawVisualizer();
+      }
+      
+      // Save preference
+      try {
+        localStorage.setItem('visualizationEnabled', visualizationEnabled);
+      } catch (e) {}
+    }
+
+    // Load saved preference
+    try {
+      const saved = localStorage.getItem('visualizationEnabled');
+      if (saved !== null) {
+        visualizationEnabled = saved === 'true';
+        if (visualizerCanvas) {
+          visualizerCanvas.classList.toggle('hidden', !visualizationEnabled);
+        }
+        if (toggleVisualizationBtn) {
+          toggleVisualizationBtn.classList.toggle('active', visualizationEnabled);
+        }
+      } else {
+        // Default: show visualization
+        visualizationEnabled = true;
+      }
+    } catch (e) {}
+
+    // Add event listener for toggle button
+    if (toggleVisualizationBtn) {
+      toggleVisualizationBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleVisualization();
+      });
+    }
 
     // Extract dominant colors from album cover
     function extractColorsFromCover() {
@@ -2261,7 +2319,7 @@
     }
 
     function drawVisualizer() {
-      if (!analyser || !visualizerCanvas) return;
+      if (!analyser || !visualizerCanvas || !visualizationEnabled) return;
 
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
@@ -2275,6 +2333,12 @@
       const maxBarHeight = 80; // Maximum bar height
 
       const draw = () => {
+        // Check if visualization is still enabled before continuing
+        if (!visualizationEnabled) {
+          animationId = null;
+          return;
+        }
+        
         animationId = requestAnimationFrame(draw);
 
         analyser.getByteFrequencyData(dataArray);
