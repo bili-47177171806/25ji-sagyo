@@ -14,6 +14,7 @@
   const volumeSlider = document.getElementById('volumeSlider');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const tzToggleBtn = document.getElementById('tzToggleBtn');
+  const orientationWarning = document.getElementById('orientation-warning');
 
   const sources = window.TIME_SYNC_SOURCES || { p1: 'p1.mp4', p2: 'p2.mp4', p3: 'p3.mp4' };
 
@@ -182,20 +183,26 @@
   }
   // play/pause and speed selector removed per user request
 
-  if (fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', async () => {
-      try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-          await screen.orientation?.lock('landscape').catch(() => {});
-        } else {
-          await document.exitFullscreen();
-          await screen.orientation?.unlock().catch(() => {});
-        }
-      } catch (e) {
-        // ignore
+  // Fullscreen / orientation toggle (shared handler)
+  const toggleFullscreenAndOrientation = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        await screen.orientation?.lock('landscape').catch(() => {});
+      } else {
+        await document.exitFullscreen();
+        await screen.orientation?.unlock().catch(() => {});
       }
-    });
+    } catch (e) {
+      console.warn('Fullscreen/orientation toggle failed:', e);
+    }
+  };
+
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', toggleFullscreenAndOrientation);
+  }
+  if (orientationWarning) {
+    orientationWarning.addEventListener('click', toggleFullscreenAndOrientation);
   }
 
   if (tzToggleBtn) {

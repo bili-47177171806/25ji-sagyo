@@ -1,8 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" id="viewportMeta" content="width=800, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+  <script>
+    (function(){
+      const LANDSCAPE_WIDTH = 1600;
+      const PORTRAIT_WIDTH = 800;
+      var target = window.innerWidth > window.innerHeight ? LANDSCAPE_WIDTH : PORTRAIT_WIDTH;
+      var vp = document.getElementById('viewportMeta');
+      if(!vp) return;
+      var scale = Math.min(1, window.innerWidth / target);
+      if (scale <= 0) scale = 1;
+      vp.setAttribute('content',
+        'width=' + target +
+        ', initial-scale=' + scale.toFixed(4) +
+        ', minimum-scale=' + scale.toFixed(4) +
+        ', maximum-scale=' + scale.toFixed(4) +
+        ', user-scalable=no'
+      );
+    })();
+  </script>
   <title>『25时、Nightcord见。』成员们的 24 小时工作日常</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -200,6 +218,14 @@
 
         <!-- Hidden Audio Element -->
         <audio id="cdAudioPlayer" preload="metadata"></audio>
+      </div>
+
+      <!-- Orientation Warning -->
+      <div id="orientation-warning">
+        <div class="warning-content">
+          <div class="phone-icon">📱</div>
+          <p>为了更好的体验，请使用横屏浏览</p>
+        </div>
       </div>
   </div>
 

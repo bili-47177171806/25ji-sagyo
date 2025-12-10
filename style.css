@@ -1688,3 +1688,46 @@ video{
 .playlist-option-icon {
   font-size: 18px;
 }
+
+/* Orientation Warning */
+#orientation-warning {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #fff;
+  text-align: center;
+}
+
+#orientation-warning .phone-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  animation: rotate-phone 2.5s infinite ease-in-out;
+}
+
+#orientation-warning p {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  opacity: 0.8;
+  letter-spacing: 1px;
+}
+
+@keyframes rotate-phone {
+  0%, 10% { transform: rotate(0deg); }
+  40%, 60% { transform: rotate(-90deg); }
+  90%, 100% { transform: rotate(0deg); }
+}
+
+@media screen and (orientation: portrait) {
+  #orientation-warning {
+    display: flex;
+  }
+}
