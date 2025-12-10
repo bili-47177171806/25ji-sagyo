@@ -48,7 +48,7 @@
   }
 
   function partIndexToKey(i) {
-    return ['p1','p2','p3'][i] || 'p1';
+    return ['p1', 'p2', 'p3'][i] || 'p1';
   }
 
   let lastPartIndex = null;
@@ -451,14 +451,14 @@
     const localSecondsEl = document.getElementById('localSeconds');
     const localMillisecondsEl = document.getElementById('localMilliseconds');
     const localDateEl = document.getElementById('localDate');
-    
+
     // Configurable World Clocks
     const clockSelects = [
       document.getElementById('clock1Select'),
       document.getElementById('clock2Select'),
       document.getElementById('clock3Select')
     ];
-    
+
     const clockTimeEls = [
       document.getElementById('clock1Time'),
       document.getElementById('clock2Time'),
@@ -496,7 +496,7 @@
     // Initialize selects
     clockSelects.forEach((select, index) => {
       if (!select) return;
-      
+
       // Populate options
       AVAILABLE_TIMEZONES.forEach(tz => {
         const option = document.createElement('option');
@@ -504,12 +504,12 @@
         option.textContent = tz.label;
         select.appendChild(option);
       });
-      
+
       // Set selected value
       if (selectedTimeZones[index]) {
         select.value = selectedTimeZones[index];
       }
-      
+
       // Add change listener
       select.addEventListener('change', (e) => {
         selectedTimeZones[index] = e.target.value;
@@ -565,9 +565,9 @@
         if (savedRounds !== null) {
           workRounds = parseInt(savedRounds);
         }
-        
+
         updateDisplay();
-        
+
         // If it was running, resume the timer
         if (savedRunning === 'true') {
           startTimer();
@@ -620,14 +620,14 @@
     function updateWorldClocks() {
       const now = new Date();
       const ms = now.getMilliseconds();
-      
+
       // Local time with milliseconds
       if (localHoursEl && localMinutesEl && localSecondsEl && localMillisecondsEl) {
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
         const milliseconds = '.' + String(ms).padStart(3, '0');
-        
+
         localHoursEl.textContent = hours;
         localMinutesEl.textContent = minutes;
         localSecondsEl.textContent = seconds;
@@ -646,7 +646,7 @@
         if (!el) return;
         const zone = selectedTimeZones[index];
         if (!zone) return;
-        
+
         try {
           const time = new Date(now.toLocaleString('en-US', { timeZone: zone }));
           const h = String(time.getHours()).padStart(2, '0');
@@ -672,7 +672,7 @@
     function updateDisplay() {
       pomodoroDisplay.textContent = formatTime(remainingSeconds);
       pomodoroRound.textContent = `${workRounds} / ${maxRounds}`;
-      
+
       // Update status text
       if (currentMode === 'work') {
         pomodoroStatus.textContent = '工作时间 🎯';
@@ -692,12 +692,12 @@
       startBtn.disabled = true;
       pauseBtn.disabled = false;
       savePomodoroState(); // Save state
-      
+
       timer = setInterval(() => {
         remainingSeconds--;
         updateDisplay();
         savePomodoroState(); // Save state on each tick
-        
+
         if (remainingSeconds <= 0) {
           clearInterval(timer);
           isRunning = false;
@@ -886,7 +886,7 @@
         localStorage.setItem(STORAGE_KEYS.REPEAT, isRepeatOn);
         localStorage.setItem(STORAGE_KEYS.VOCAL_PREFERENCE, preferredVocalType);
         localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify([...favorites]));
-        
+
         // Serialize playlists (convert Sets to Arrays)
         const serializedPlaylists = playlists.map(p => ({
           id: p.id,
@@ -966,12 +966,12 @@
         const charIds = sekaiVocal.characters
           .filter(c => c.characterType === 'game_character')
           .map(c => c.characterId);
-        
+
         if (charIds.length === 0) {
           // No game characters
           return 'other';
         }
-        
+
         // Check if this is a cross-unit collaboration (characters from multiple units)
         const units = new Set();
         charIds.forEach(id => {
@@ -981,12 +981,12 @@
           else if (id >= 13 && id <= 16) units.add('wonderlands_x_showtime');
           else if (id >= 17 && id <= 20) units.add('25_ji_nightcord_de');
         });
-        
+
         // If multiple units are involved, it's a cross-unit collaboration -> Other
         if (units.size > 1) {
           return 'other';
         }
-        
+
         // Single unit song
         if (units.has('leo_need')) return 'leo_need';
         if (units.has('more_more_jump')) return 'more_more_jump';
@@ -994,25 +994,25 @@
         if (units.has('wonderlands_x_showtime')) return 'wonderlands_x_showtime';
         if (units.has('25_ji_nightcord_de')) return '25_ji_nightcord_de';
       }
-      
+
       // 2. Special check: If music has vocals but all vocals have empty or missing characters
       // (Like some special event songs that have vocals but no credited singers)
-      const allVocals = musicVocalsData.filter(v => 
-        v.musicId === music.id && 
+      const allVocals = musicVocalsData.filter(v =>
+        v.musicId === music.id &&
         v.musicVocalType !== 'instrumental'
       );
-      
+
       if (allVocals.length > 0) {
         // Check if ALL vocals have no characters
-        const allHaveNoCharacters = allVocals.every(v => 
+        const allHaveNoCharacters = allVocals.every(v =>
           !v.characters || v.characters.length === 0
         );
-        
+
         if (allHaveNoCharacters) {
           // All vocals exist but none have credited singers -> Other
           return 'other';
         }
-        
+
         // Has vocals with characters -> Virtual Singer
         return 'virtual_singer';
       }
@@ -1024,11 +1024,11 @@
     // Filter music list based on category and search
     function filterMusicList(query = '') {
       let list = musicData.filter(music => {
-          // Find any vocal for this music
-          const hasVocal = musicVocalsData.some(
-            vocal => vocal.musicId === music.id
-          );
-          return hasVocal;
+        // Find any vocal for this music
+        const hasVocal = musicVocalsData.some(
+          vocal => vocal.musicId === music.id
+        );
+        return hasVocal;
       });
 
       // Filter by category
@@ -1063,7 +1063,7 @@
             (zhTitle && zhTitle.toLowerCase().includes(query));
         });
       }
-      
+
       filteredMusicData = list;
       displayMusicList(filteredMusicData);
     }
@@ -1078,17 +1078,17 @@
     async function initDB() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
-        
+
         request.onerror = () => {
           console.error('IndexedDB error:', request.error);
           reject(request.error);
         };
-        
+
         request.onsuccess = () => {
           db = request.result;
           resolve(db);
         };
-        
+
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
           if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -1101,14 +1101,14 @@
     // Save local music to IndexedDB
     async function saveLocalMusicToDB(musicInfo) {
       if (!db) await initDB();
-      
+
       return new Promise((resolve, reject) => {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
-        
+
         // Store the complete music info including the file
         const request = store.put(musicInfo);
-        
+
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
       });
@@ -1117,12 +1117,12 @@
     // Load all local music from IndexedDB
     async function loadLocalMusicFromDB() {
       if (!db) await initDB();
-      
+
       return new Promise((resolve, reject) => {
         const transaction = db.transaction([STORE_NAME], 'readonly');
         const store = transaction.objectStore(STORE_NAME);
         const request = store.getAll();
-        
+
         request.onsuccess = () => {
           const items = request.result;
           // Recreate audioUrl from stored file
@@ -1140,12 +1140,12 @@
     // Delete local music from IndexedDB
     async function deleteLocalMusicFromDB(id) {
       if (!db) await initDB();
-      
+
       return new Promise((resolve, reject) => {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         const request = store.delete(id);
-        
+
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
       });
@@ -1158,7 +1158,7 @@
         const savedMusic = await loadLocalMusicFromDB();
         if (savedMusic.length > 0) {
           localMusicData.push(...savedMusic);
-                  }
+        }
       } catch (error) {
         console.error('Failed to load local music from database:', error);
       }
@@ -1170,7 +1170,7 @@
       if (jsMediaTagsLoaded || window.jsmediatags) {
         return true;
       }
-      
+
       try {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
@@ -1195,14 +1195,14 @@
       input.type = 'file';
       input.multiple = true;
       input.accept = 'audio/*';
-      
+
       input.onchange = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
-        
+
         // Show loading indicator
         musicList.innerHTML = '<div class="loading">正在加载库文件...</div>';
-        
+
         // Load jsmediatags library
         const loaded = await loadJsMediaTags();
         if (!loaded) {
@@ -1213,14 +1213,14 @@
             }
           }, 1500);
         }
-        
+
         musicList.innerHTML = '<div class="loading">正在读取文件信息...</div>';
-        
+
         for (let index = 0; index < files.length; index++) {
           const file = files[index];
           const id = 'local_' + Date.now() + '_' + index;
           const audioUrl = URL.createObjectURL(file);
-          
+
           // Default values
           let musicInfo = {
             id: id,
@@ -1234,20 +1234,20 @@
             assetbundleName: 'local',
             coverUrl: null
           };
-          
+
           // Try to read metadata using jsmediatags
           if (loaded && window.jsmediatags) {
             try {
               await new Promise((resolve) => {
                 window.jsmediatags.read(file, {
-                  onSuccess: function(tag) {
+                  onSuccess: function (tag) {
                     const tags = tag.tags;
-                    
+
                     // Extract metadata
                     if (tags.title) musicInfo.title = tags.title;
                     if (tags.artist) musicInfo.composer = tags.artist;
                     if (tags.album) musicInfo.album = tags.album;
-                    
+
                     // Extract album cover
                     if (tags.picture) {
                       const picture = tags.picture;
@@ -1257,10 +1257,10 @@
                       }
                       musicInfo.coverUrl = `data:${picture.format};base64,${window.btoa(base64String)}`;
                     }
-                    
+
                     resolve();
                   },
-                  onError: function(error) {
+                  onError: function (error) {
                     console.warn('Failed to read metadata for', file.name, error);
                     resolve(); // Continue with default values
                   }
@@ -1270,9 +1270,9 @@
               console.warn('Error reading tags:', err);
             }
           }
-          
+
           localMusicData.push(musicInfo);
-          
+
           // Save to IndexedDB for persistence
           try {
             await saveLocalMusicToDB(musicInfo);
@@ -1280,7 +1280,7 @@
             console.error('Failed to save music to database:', error);
           }
         }
-        
+
         // Refresh list if currently viewing local music
         if (currentCategory === 'local') {
           filterMusicList(musicSearchInput ? musicSearchInput.value.toLowerCase().trim() : '');
@@ -1290,7 +1290,7 @@
           if (localBtn) localBtn.click();
         }
       };
-      
+
       input.click();
     }
 
@@ -1322,7 +1322,7 @@
       document.querySelectorAll('.playlist-dropdown.show').forEach(dropdown => {
         dropdown.classList.remove('show');
       });
-      
+
       // Show simple modal or prompt to select playlist
       if (playlists.length === 0) {
         if (confirm('还没有创建歌单，是否现在创建？')) {
@@ -1334,28 +1334,28 @@
       // Create dropdown for selection
       const dropdown = document.createElement('div');
       dropdown.className = 'playlist-dropdown show';
-      
+
       playlists.forEach(p => {
         const item = document.createElement('div');
         item.className = 'playlist-dropdown-item';
         const isAdded = p.tracks.has(musicId);
-        
+
         const icon = document.createElement('span');
         icon.className = 'playlist-dropdown-icon';
         icon.textContent = '📂';
-        
+
         const name = document.createElement('span');
         name.className = 'playlist-dropdown-name';
         name.textContent = p.name;
-        
+
         const check = document.createElement('span');
         check.className = 'playlist-dropdown-check';
         check.textContent = isAdded ? '✓' : '';
-        
+
         item.appendChild(icon);
         item.appendChild(name);
         item.appendChild(check);
-        
+
         item.addEventListener('click', (e) => {
           e.stopPropagation();
           if (isAdded) {
@@ -1370,31 +1370,31 @@
             filterMusicList(musicSearchInput ? musicSearchInput.value.toLowerCase().trim() : '');
           }
         });
-        
+
         dropdown.appendChild(item);
       });
-      
+
       // New playlist option
       const newItem = document.createElement('div');
       newItem.className = 'playlist-dropdown-item create-new';
-      
+
       const newIcon = document.createElement('span');
       newIcon.className = 'playlist-dropdown-icon';
       newIcon.textContent = '+';
-      
+
       const newName = document.createElement('span');
       newName.className = 'playlist-dropdown-name';
       newName.textContent = '新建歌单';
-      
+
       newItem.appendChild(newIcon);
       newItem.appendChild(newName);
-      
+
       newItem.addEventListener('click', (e) => {
         e.stopPropagation();
         dropdown.remove();
         createPlaylist();
       });
-      
+
       dropdown.appendChild(newItem);
 
       // Position dropdown relative to the button
@@ -1402,7 +1402,7 @@
       if (actionsContainer) {
         actionsContainer.appendChild(dropdown);
       }
-      
+
       // Close dropdown when clicking outside - use capture phase and check immediately
       const closeDropdown = (e) => {
         // Check if dropdown still exists in DOM
@@ -1410,7 +1410,7 @@
           document.removeEventListener('click', closeDropdown, true);
           return;
         }
-        
+
         // Check if click is outside both the dropdown and the button
         if (!dropdown.contains(e.target) && !buttonElement.contains(e.target)) {
           dropdown.classList.remove('show');
@@ -1422,12 +1422,12 @@
           document.removeEventListener('click', closeDropdown, true);
         }
       };
-      
+
       // Add listener in next tick to avoid immediate trigger
       setTimeout(() => {
         document.addEventListener('click', closeDropdown, true); // Use capture phase
       }, 0);
-      
+
       // Also close when pressing Escape key
       const handleEscape = (e) => {
         if (e.key === 'Escape') {
@@ -1441,10 +1441,10 @@
 
     function displayPlaylists() {
       musicList.innerHTML = '';
-      
+
       const grid = document.createElement('div');
       grid.className = 'playlist-grid';
-      
+
       // Create New Card
       const createCard = document.createElement('div');
       createCard.className = 'playlist-card create-new';
@@ -1454,7 +1454,7 @@
       `;
       createCard.addEventListener('click', createPlaylist);
       grid.appendChild(createCard);
-      
+
       // Playlist Cards
       playlists.forEach(p => {
         const card = document.createElement('div');
@@ -1464,13 +1464,13 @@
           <div class="playlist-name">${p.name}</div>
           <div class="playlist-count">${p.tracks.size} 首歌曲</div>
         `;
-        
+
         // Right click to delete
         card.addEventListener('contextmenu', (e) => {
           e.preventDefault();
           deletePlaylist(p.id);
         });
-        
+
         card.addEventListener('click', () => {
           currentCategory = p.id;
           // Update active category button visually (none of the main ones)
@@ -1478,13 +1478,13 @@
           // Maybe highlight the playlist folder button?
           const plBtn = document.querySelector('.category-btn[data-category="playlists"]');
           if (plBtn) plBtn.classList.add('active');
-          
+
           filterMusicList('');
         });
-        
+
         grid.appendChild(card);
       });
-      
+
       musicList.appendChild(grid);
     }
 
@@ -1502,7 +1502,7 @@
         btn.title = '取消收藏';
       }
       saveSettings();
-      
+
       // If currently viewing favorites, refresh list
       if (currentCategory === 'favorites') {
         filterMusicList(musicSearchInput ? musicSearchInput.value.toLowerCase().trim() : '');
@@ -1556,17 +1556,17 @@
     async function loadMusicData() {
       try {
         musicList.innerHTML = '<div class="loading">加载音乐列表中...</div>';
-        
+
         // Fetch musics.json
         const musicsResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/musics.json');
         if (!musicsResponse.ok) throw new Error('Failed to fetch musics');
         musicData = await musicsResponse.json();
-        
+
         // Fetch musicVocals.json
         const vocalsResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/musicVocals.json');
         if (!vocalsResponse.ok) throw new Error('Failed to fetch music vocals');
         musicVocalsData = await vocalsResponse.json();
-        
+
         // Fetch Chinese translations
         try {
           const titlesResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/music_titles.json');
@@ -1576,11 +1576,11 @@
         } catch (error) {
           console.warn('Failed to load Chinese translations:', error);
         }
-        
+
         // Filter and prepare music list
         // Initial filter (just to populate filteredMusicData correctly for the first time)
         filterMusicList('');
-        
+
         // Load saved settings and restore last track
         loadSettings();
         const savedTrackIndex = localStorage.getItem(STORAGE_KEYS.LAST_TRACK);
@@ -1613,7 +1613,7 @@
         `;
         importBtn.addEventListener('click', importLocalMusic);
         musicList.appendChild(importBtn);
-        
+
         if (list.length === 0) {
           const tip = document.createElement('div');
           tip.style.padding = '20px';
@@ -1635,19 +1635,19 @@
         if (currentMusicId === music.id) {
           item.classList.add('active');
         }
-        
+
         // Always display original title + composer
         const displayTitle = music.title;
         let displayArtist = music.composer || 'Unknown';
-        
+
         // For local music, show album info
         if (music.isLocal && music.album && music.album !== 'Unknown Album') {
           displayArtist = `${displayArtist} · ${music.album}`;
         }
-        
+
         const isFav = favorites.has(music.id);
         const isLocal = music.isLocal;
-        
+
         item.innerHTML = `
           <div class="music-item-content">
             <div class="music-item-title" data-full-text="${displayTitle.replace(/"/g, '&quot;')}">${displayTitle}</div>
@@ -1664,28 +1664,28 @@
             `}
           </div>
         `;
-        
+
         // Check if title is too long and add scrolling animation
         const titleElement = item.querySelector('.music-item-title');
         const contentElement = item.querySelector('.music-item-content');
-        
+
         // Wait for DOM to render to measure width
         requestAnimationFrame(() => {
           const containerWidth = contentElement.clientWidth;
           const textWidth = titleElement.scrollWidth;
-          
+
           if (textWidth > containerWidth) {
             titleElement.classList.add('scrolling');
             // Allow overflow to show scrolling text
             contentElement.style.overflow = 'visible';
-            
+
             // Calculate how much to scroll: move left by (textWidth - containerWidth)
             // This ensures the entire text becomes visible
             const scrollDistance = -(textWidth - containerWidth);
             titleElement.style.setProperty('--scroll-distance', `${scrollDistance}px`);
           }
         });
-        
+
         // Click on item content to play
         const content = item.querySelector('.music-item-content');
         content.addEventListener('click', () => {
@@ -1693,7 +1693,7 @@
           pendingAutoPlay = true; // Set flag to auto-play after loading
           loadTrack(trackIndex);
         });
-        
+
         // Handle local music delete button
         if (isLocal) {
           const deleteBtn = item.querySelector('.delete-local-btn');
@@ -1704,7 +1704,7 @@
                 try {
                   // Remove from IndexedDB
                   await deleteLocalMusicFromDB(music.id);
-                  
+
                   // Remove from local array
                   const idx = localMusicData.findIndex(m => m.id === music.id);
                   if (idx !== -1) {
@@ -1714,10 +1714,10 @@
                     }
                     localMusicData.splice(idx, 1);
                   }
-                  
+
                   // Refresh list
                   filterMusicList(musicSearchInput ? musicSearchInput.value.toLowerCase().trim() : '');
-                  
+
                   // Stop playback if this was the current track
                   if (currentMusicId === music.id) {
                     pauseTrack();
@@ -1740,7 +1740,7 @@
               addToPlaylist(music.id, addBtn);
             });
           }
-          
+
           // Click on favorite button
           const favBtn = item.querySelector('.favorite-btn');
           if (favBtn) {
@@ -1750,7 +1750,7 @@
             });
           }
         }
-        
+
         musicList.appendChild(item);
       });
     }
@@ -1762,10 +1762,10 @@
         // Update active state
         categoryBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
+
         // Update category and filter
         const cat = btn.dataset.category;
-        
+
         if (cat === 'playlists') {
           currentCategory = 'playlists';
           displayPlaylists();
@@ -1787,32 +1787,32 @@
     // Get character names for vocal
     function getVocalCharacterNames(vocal) {
       if (!vocal.characters || vocal.characters.length === 0) return '';
-      
+
       const names = vocal.characters
         .filter(c => c.characterType === 'game_character')
         .map(c => gameCharacters[c.characterId])
         .filter(name => name !== undefined);
-      
+
       return names.length > 0 ? names.join('・') : '';
     }
 
     // Load a track
     function loadTrack(index, vocalId = null) {
       if (index < 0 || index >= filteredMusicData.length) return;
-      
+
       currentTrackIndex = index;
       const music = filteredMusicData[index];
       currentMusicId = music.id; // Track the current music ID
 
       // Show loading spinner
       if (trackLoadingSpinner) trackLoadingSpinner.classList.remove('hidden');
-      
+
       // Handle Local Music
       if (music.isLocal) {
         trackTitle.textContent = music.title;
         trackArtist.textContent = `${music.composer}${music.album ? ' · ' + music.album : ''}`;
         trackVocal.textContent = 'Local File';
-        
+
         // Use cover from metadata if available, otherwise use placeholder
         if (music.coverUrl) {
           albumCover.src = music.coverUrl;
@@ -1828,12 +1828,12 @@
             dominantColors = extractColorsFromCover();
           };
         }
-        
+
         // Set audio source
         cdAudioPlayer.onerror = null;
         cdAudioPlayer.src = music.audioUrl;
         cdAudioPlayer.load();
-        
+
         // Update active class manually
         const items = musicList.querySelectorAll('.music-item:not(.import-item)');
         items.forEach(item => item.classList.remove('active'));
@@ -1844,20 +1844,20 @@
         currentTimeEl.textContent = '0:00';
         return;
       }
-      
+
       // Get all vocals for this music
       const availableVocals = musicVocalsData.filter(
         vocal => vocal.musicId === music.id
       );
-      
+
       if (availableVocals.length === 0) {
         console.error('No vocals found for music:', music.id);
         return;
       }
-      
+
       // Select vocal: use specified vocalId, or prefer preferredVocalType, or sekai, or first available
       let selectedVocal;
-      
+
       if (vocalId) {
         // Manual selection
         selectedVocal = availableVocals.find(v => v.id === vocalId);
@@ -1865,43 +1865,43 @@
           preferredVocalType = selectedVocal.musicVocalType;
         }
       }
-      
+
       if (!selectedVocal && preferredVocalType) {
         // Try to match preference
         selectedVocal = availableVocals.find(v => v.musicVocalType === preferredVocalType);
       }
-      
+
       if (!selectedVocal) {
         // Prefer sekai version as fallback
         selectedVocal = availableVocals.find(v => v.musicVocalType === 'sekai');
       }
-      
+
       if (!selectedVocal) {
         // Use first available
         selectedVocal = availableVocals[0];
       }
-      
+
       currentVocalId = selectedVocal.id;
-      
+
       // Always display original title
       const displayTitle = music.title;
-      
+
       // Update UI
       trackTitle.textContent = displayTitle;
       trackArtist.textContent = `作曲: ${music.composer || 'Unknown'} · 作词: ${music.lyricist || 'Unknown'}`;
-      
+
       // Create custom vocal selector
       trackVocal.innerHTML = '';
-      
+
       if (availableVocals.length > 1) {
         const container = document.createElement('div');
         container.style.cssText = 'display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;';
-        
+
         availableVocals.forEach(vocal => {
           const btn = document.createElement('button');
           const characterNames = getVocalCharacterNames(vocal);
           const vocalLabel = vocal.caption || vocal.musicVocalType;
-          
+
           btn.textContent = characterNames ? `${vocalLabel} (${characterNames})` : vocalLabel;
           btn.style.cssText = `
             background: ${vocal.id === selectedVocal.id ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.4))' : 'rgba(255,255,255,0.1)'};
@@ -1914,54 +1914,54 @@
             transition: all 0.2s;
             white-space: nowrap;
           `;
-          
+
           btn.addEventListener('mouseenter', () => {
             if (vocal.id !== selectedVocal.id) {
               btn.style.background = 'rgba(255,255,255,0.15)';
               btn.style.transform = 'translateY(-1px)';
             }
           });
-          
+
           btn.addEventListener('mouseleave', () => {
             if (vocal.id !== selectedVocal.id) {
               btn.style.background = 'rgba(255,255,255,0.1)';
               btn.style.transform = 'translateY(0)';
             }
           });
-          
+
           btn.addEventListener('click', () => {
             const wasPlaying = isPlaying;
             if (wasPlaying) pauseTrack(); // Pause current first
             pendingAutoPlay = wasPlaying; // Set flag if was playing
             loadTrack(currentTrackIndex, vocal.id);
           });
-          
+
           container.appendChild(btn);
         });
-        
+
         trackVocal.appendChild(container);
       } else {
         const characterNames = getVocalCharacterNames(selectedVocal);
         const vocalLabel = selectedVocal.caption || 'セカイver.';
         trackVocal.textContent = characterNames ? `${vocalLabel} (${characterNames})` : vocalLabel;
       }
-      
+
       // Update album cover with fallback
       const primaryCoverUrl = `https://pj-sekai.oss-cn-shanghai.aliyuncs.com/music/jacket/${music.assetbundleName}/${music.assetbundleName}.png`;
       const fallbackCoverUrl = `https://storage.nightcord.de5.net/music/jacket/${music.assetbundleName}/${music.assetbundleName}.png`;
-      
+
       // Set crossOrigin BEFORE setting src to enable CORS
       albumCover.crossOrigin = "anonymous";
       albumCover.src = primaryCoverUrl;
       albumCover.style.display = 'block';
       albumCover.style.opacity = '0.5'; // Dim while loading
-      
+
       albumCover.onload = () => {
         albumCover.style.opacity = '1';
         // Extract colors from loaded cover for visualizer
         dominantColors = extractColorsFromCover();
       };
-      
+
       // If primary cover fails, try fallback
       albumCover.onerror = () => {
         if (albumCover.src === primaryCoverUrl) {
@@ -1969,23 +1969,23 @@
           albumCover.src = fallbackCoverUrl;
         }
       };
-      
+
       // Build audio URL with primary source
       const primaryAudioUrl = `https://pj-sekai.oss-cn-shanghai.aliyuncs.com/music/long/${selectedVocal.assetbundleName}/${selectedVocal.assetbundleName}.flac`;
       const fallbackAudioUrl = `https://storage.nightcord.de5.net/music/long/${selectedVocal.assetbundleName}/${selectedVocal.assetbundleName}.flac`;
-      
+
       // Clear previous onerror handler to prevent conflicts
       cdAudioPlayer.onerror = null;
-      
+
       // Try primary audio first
       cdAudioPlayer.crossOrigin = "anonymous"; // Ensure CORS for visualizer
       cdAudioPlayer.src = primaryAudioUrl;
       cdAudioPlayer.load(); // Explicitly load the new source
-      
+
       // If primary audio fails, use fallback (and preserve pendingAutoPlay flag)
       cdAudioPlayer.onerror = () => {
         if (cdAudioPlayer.src === primaryAudioUrl) {
-                    cdAudioPlayer.onerror = null; // Clear handler before changing src
+          cdAudioPlayer.onerror = null; // Clear handler before changing src
           cdAudioPlayer.src = fallbackAudioUrl;
           cdAudioPlayer.load();
           // pendingAutoPlay flag is preserved, canplay event will handle auto-play
@@ -1996,7 +1996,7 @@
           pendingAutoPlay = false;
         }
       };
-      
+
       // Set start time to skip filler (blank audio at beginning)
       const fillerSec = music.fillerSec || 0;
       if (fillerSec > 0) {
@@ -2005,7 +2005,7 @@
           cdAudioPlayer.currentTime = fillerSec;
         });
       }
-      
+
       // Update active item in list (use music ID instead of index)
       document.querySelectorAll('.music-item').forEach((item) => {
         // We already set the active class based on currentMusicId in displayMusicList
@@ -2015,10 +2015,10 @@
         const itemMusic = filteredMusicData[itemIndex];
         item.classList.toggle('active', itemMusic && itemMusic.id === music.id);
       });
-      
+
       // Save current track index to localStorage
       saveSettings();
-      
+
       // Reset progress
       progressBar.value = 0;
       currentTimeEl.textContent = '0:00';
@@ -2027,7 +2027,7 @@
     const albumCoverContainer = document.querySelector('.album-cover-container');
     const albumCoverElement = document.getElementById('albumCover');
     const cdAnimationElement = document.getElementById('cdAnimation');
-    
+
     // Audio Visualizer Setup
     let audioContext = null;
     let analyser = null;
@@ -2042,50 +2042,50 @@
       try {
         const img = albumCoverElement;
         if (!img || !img.complete) return [];
-        
+
         // Create temporary canvas to read image pixels
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
-        
+
         // Resize to small size for faster processing
         const size = 50;
         tempCanvas.width = size;
         tempCanvas.height = size;
-        
+
         // Draw image
         tempCtx.drawImage(img, 0, 0, size, size);
-        
+
         // Get image data
         const imageData = tempCtx.getImageData(0, 0, size, size);
         const pixels = imageData.data;
-        
+
         // Collect color samples (sample every 10th pixel for performance)
         const colorMap = {};
         const lowSatColors = []; // Store low-saturation colors separately
         let totalSaturation = 0;
         let sampleCount = 0;
-        
+
         for (let i = 0; i < pixels.length; i += 40) { // RGBA, so skip by 40 (10 pixels)
           const r = pixels[i];
           const g = pixels[i + 1];
           const b = pixels[i + 2];
           const a = pixels[i + 3];
-          
+
           // Skip transparent pixels
           if (a < 128) continue;
-          
+
           // Skip pure black/white
           if ((r < 15 && g < 15 && b < 15) || (r > 240 && g > 240 && b > 240)) continue;
-          
+
           // Convert to HSL for better color grouping
           const hsl = rgbToHsl(r, g, b);
           totalSaturation += hsl.s;
           sampleCount++;
-          
+
           // Separate saturated and desaturated colors
           if (hsl.s >= 20) {
             const hueKey = Math.round(hsl.h / 30) * 30; // Group by 30° hue ranges
-            
+
             if (!colorMap[hueKey]) {
               colorMap[hueKey] = { h: hsl.h, s: hsl.s, l: hsl.l, count: 0 };
             }
@@ -2099,21 +2099,21 @@
             lowSatColors.push({ h: hsl.h, s: hsl.s, l: hsl.l });
           }
         }
-        
+
         // Calculate average saturation
         const avgSaturation = sampleCount > 0 ? totalSaturation / sampleCount : 0;
-        
+
         // Check if this is a monochrome/low-saturation cover
         const isMonochrome = avgSaturation < 15;
-        
+
         let colors;
-        
+
         if (isMonochrome) {
           // For monochrome covers, use grayscale gradient
-                    
+
           // Sort low-sat colors by lightness
           lowSatColors.sort((a, b) => a.l - b.l);
-          
+
           // Create grayscale gradient from dark to light
           colors = [
             { h: 0, s: 0, l: 30 },  // Dark gray
@@ -2125,7 +2125,7 @@
           // Get top saturated colors by frequency
           const colorList = Object.values(colorMap)
             .sort((a, b) => b.count - a.count);
-          
+
           // Check if this is a monochromatic (single hue) cover
           const dominantColor = colorList[0];
           const hueVariance = colorList.reduce((acc, c) => {
@@ -2134,11 +2134,11 @@
             const wrappedDiff = Math.min(hueDiff, 360 - hueDiff);
             return acc + wrappedDiff * c.count;
           }, 0) / colorList.reduce((acc, c) => acc + c.count, 0);
-          
-                    
+
+
           // If hue variance is very small (< 30°), it's a single-color cover
           if (hueVariance < 30) {
-                        // Use different lightness values of the same hue
+            // Use different lightness values of the same hue
             colors = [
               { h: dominantColor.h, s: Math.max(dominantColor.s, 60), l: 35 },
               { h: dominantColor.h, s: Math.max(dominantColor.s, 60), l: 50 },
@@ -2149,17 +2149,17 @@
             // Multi-color cover, use extracted palette
             colors = colorList
               .slice(0, 8) // Get more colors for better gradient
-              .map(c => ({ 
-                h: c.h, 
+              .map(c => ({
+                h: c.h,
                 s: Math.max(c.s, 50), // Boost saturation for colorful covers
-                l: Math.min(Math.max(c.l, 40), 70) 
+                l: Math.min(Math.max(c.l, 40), 70)
               }));
-            
+
             // Sort colors by hue for smooth gradient
             colors = sortColorsForGradient(colors);
           }
         }
-        
+
         return colors;
       } catch (e) {
         console.warn('Failed to extract colors from cover:', e);
@@ -2170,28 +2170,28 @@
     // Sort colors by hue to create smooth gradient
     function sortColorsForGradient(colors) {
       if (colors.length <= 1) return colors;
-      
+
       // Sort by hue value (0-360)
       const sorted = [...colors].sort((a, b) => a.h - b.h);
-      
+
       // Check if we should wrap around (e.g., red at 0° and 360°)
       // Calculate the largest gap in the hue circle
       let maxGap = 0;
       let maxGapIndex = 0;
-      
+
       for (let i = 0; i < sorted.length; i++) {
         const current = sorted[i].h;
         const next = sorted[(i + 1) % sorted.length].h;
-        const gap = i === sorted.length - 1 
+        const gap = i === sorted.length - 1
           ? (360 - current + next) // Wrap around gap
           : (next - current);
-        
+
         if (gap > maxGap) {
           maxGap = gap;
           maxGapIndex = i;
         }
       }
-      
+
       // If there's a large gap, start the array after that gap
       // This ensures the gradient doesn't go through the gap
       if (maxGap > 60) { // If gap is larger than 60°, reorganize
@@ -2201,7 +2201,7 @@
         ];
         return reordered;
       }
-      
+
       return sorted;
     }
 
@@ -2210,24 +2210,24 @@
       r /= 255;
       g /= 255;
       b /= 255;
-      
+
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
       let h, s, l = (max + min) / 2;
-      
+
       if (max === min) {
         h = s = 0;
       } else {
         const d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        
+
         switch (max) {
           case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
           case g: h = ((b - r) / d + 2) / 6; break;
           case b: h = ((r - g) / d + 4) / 6; break;
         }
       }
-      
+
       return {
         h: h * 360,
         s: s * 100,
@@ -2237,23 +2237,23 @@
 
     function initAudioVisualizer() {
       if (!visualizerCanvas || audioContext) return;
-      
+
       try {
         // Create AudioContext
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         audioContext = new AudioContext();
-        
+
         // Create Analyser
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256; // Controls the number of frequency bins
-        
+
         // Connect Audio Element to Analyser
         // Note: This requires CORS to be handled correctly for cross-origin audio
         cdAudioPlayer.crossOrigin = "anonymous";
         source = audioContext.createMediaElementSource(cdAudioPlayer);
         source.connect(analyser);
         analyser.connect(audioContext.destination);
-        
+
         drawVisualizer();
       } catch (e) {
         console.warn('Web Audio API setup failed:', e);
@@ -2262,10 +2262,10 @@
 
     function drawVisualizer() {
       if (!analyser || !visualizerCanvas) return;
-      
+
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-      
+
       const width = visualizerCanvas.width;
       const height = visualizerCanvas.height;
       const centerX = width / 2;
@@ -2273,45 +2273,45 @@
       const coverRadius = 120; // Approximate CD cover radius
       const minBarHeight = 5; // Minimum bar height to ensure visibility
       const maxBarHeight = 80; // Maximum bar height
-      
+
       const draw = () => {
         animationId = requestAnimationFrame(draw);
-        
+
         analyser.getByteFrequencyData(dataArray);
-        
+
         canvasCtx.clearRect(0, 0, width, height);
-        
+
         // Use extracted colors or fallback to rainbow
         const useExtractedColors = dominantColors.length > 0;
-        
+
         // Draw bars starting from cover edge, extending outward
         for (let i = 0; i < bufferLength; i++) {
           // Scale bar height with minimum
           const barHeight = minBarHeight + (dataArray[i] / 255) * (maxBarHeight - minBarHeight);
-          
+
           // Calculate angle
           const angle = (i / bufferLength) * 2 * Math.PI - Math.PI / 2; // Start from top
-          
+
           // Start from edge of cover, extend outward
           const x1 = centerX + Math.cos(angle) * coverRadius;
           const y1 = centerY + Math.sin(angle) * coverRadius;
           const x2 = centerX + Math.cos(angle) * (coverRadius + barHeight);
           const y2 = centerY + Math.sin(angle) * (coverRadius + barHeight);
-          
+
           // Draw bar with gradient effect
           canvasCtx.beginPath();
           canvasCtx.moveTo(x1, y1);
           canvasCtx.lineTo(x2, y2);
           canvasCtx.lineWidth = 4;
-          
+
           // Create gradient from base to tip
           const gradient = canvasCtx.createLinearGradient(x1, y1, x2, y2);
-          
+
           if (useExtractedColors) {
             // Add slow rotation effect by shifting the color array position
             const rotationSpeed = 0.0005; // Very slow rotation
             const rotationOffset = (Date.now() * rotationSpeed) % dominantColors.length;
-            
+
             // Smooth gradient across all colors with rotation
             // Calculate position in the color array (with smooth interpolation and rotation)
             const basePosition = (i / bufferLength) * dominantColors.length;
@@ -2319,20 +2319,20 @@
             const colorIndex = Math.floor(position);
             const nextColorIndex = (colorIndex + 1) % dominantColors.length;
             const blend = position - colorIndex; // 0 to 1 for blending
-            
+
             const color1 = dominantColors[colorIndex];
             const color2 = dominantColors[nextColorIndex];
-            
+
             // Interpolate between two adjacent colors in the gradient array
             const h = color1.h + (color2.h - color1.h) * blend;
             const s = color1.s + (color2.s - color1.s) * blend;
             const l = color1.l + (color2.l - color1.l) * blend;
-            
+
             // Vary lightness based on frequency intensity
             const intensity = dataArray[i] / 255;
             const lightness1 = Math.max(25, l - 15);
             const lightness2 = Math.min(75, l + 15 + 15 * intensity);
-            
+
             gradient.addColorStop(0, `hsla(${h}, ${s}%, ${lightness1}%, 0.6)`);
             gradient.addColorStop(1, `hsla(${h}, ${s}%, ${lightness2}%, 0.95)`);
           } else {
@@ -2341,46 +2341,46 @@
             gradient.addColorStop(0, `hsla(${hue}, 70%, 50%, 0.4)`);
             gradient.addColorStop(1, `hsla(${hue}, 80%, 60%, 0.8)`);
           }
-          
+
           canvasCtx.strokeStyle = gradient;
           canvasCtx.lineCap = 'round';
           canvasCtx.stroke();
         }
       };
-      
+
       draw();
     }
 
     // Play track
     function playTrack() {
-            
+
       // Initialize visualizer on first user interaction (play)
       if (!audioContext) {
         initAudioVisualizer();
       } else if (audioContext.state === 'suspended') {
         audioContext.resume();
       }
-      
+
       if (currentTrackIndex < 0) {
         // Play first track if none selected
-                pendingAutoPlay = true;
+        pendingAutoPlay = true;
         loadTrack(0);
         return;
       }
-      
-            
+
+
       // If audio is not ready yet, set flag and wait for canplay event
       if (cdAudioPlayer.readyState < 2) {
-                if (trackLoadingSpinner) trackLoadingSpinner.classList.remove('hidden');
+        if (trackLoadingSpinner) trackLoadingSpinner.classList.remove('hidden');
         pendingAutoPlay = true;
         return;
       }
-      
+
       cdAudioPlayer.play()
         .then(() => {
-                    isPlaying = true;
+          isPlaying = true;
           playPauseBtn.textContent = '⏸️';
-          
+
           // Start CD animation smoothly
           if (albumCoverContainer) {
             albumCoverContainer.classList.add('playing');
@@ -2393,32 +2393,32 @@
 
     // Pause track
     function pauseTrack() {
-            cdAudioPlayer.pause();
+      cdAudioPlayer.pause();
       isPlaying = false;
       playPauseBtn.textContent = '▶️';
-      
+
       // Stop CD animation smoothly
       if (albumCoverContainer) {
         // Get current rotation from computed style
         const coverStyle = window.getComputedStyle(albumCoverElement);
         const matrix = coverStyle.transform;
-        
+
         if (matrix && matrix !== 'none') {
           // Parse rotation from matrix
           const values = matrix.match(/matrix.*\((.+)\)/)[1].split(', ');
           const a = parseFloat(values[0]);
           const b = parseFloat(values[1]);
           const currentAngle = Math.round(Math.atan2(b, a) * (180 / Math.PI));
-          
+
           // Remove animation class first
           albumCoverContainer.classList.remove('playing');
-          
+
           // Set current rotation as static transform
           albumCoverElement.style.transform = `rotate(${currentAngle}deg)`;
           if (cdAnimationElement) {
             cdAnimationElement.style.transform = `rotate(${currentAngle}deg)`;
           }
-          
+
           // Smoothly transition back to 0
           requestAnimationFrame(() => {
             albumCoverElement.style.transition = 'transform 0.8s ease-out, border-radius 0.5s ease';
@@ -2449,11 +2449,11 @@
     if (prevBtn) {
       prevBtn.addEventListener('click', () => {
         const wasPlaying = isPlaying;
-                pauseTrack(); // Pause current first
+        pauseTrack(); // Pause current first
         pendingAutoPlay = wasPlaying; // Set flag for auto-play
-        
+
         const nextIndex = getNextTrackIndex(currentTrackIndex, -1, isShuffleOn);
-                loadTrack(nextIndex);
+        loadTrack(nextIndex);
       });
     }
 
@@ -2461,11 +2461,11 @@
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
         const wasPlaying = isPlaying;
-                pauseTrack(); // Pause current first
+        pauseTrack(); // Pause current first
         pendingAutoPlay = wasPlaying; // Set flag for auto-play
-        
+
         const nextIndex = getNextTrackIndex(currentTrackIndex, 1, isShuffleOn);
-                loadTrack(nextIndex);
+        loadTrack(nextIndex);
       });
     }
 
@@ -2494,23 +2494,23 @@
       cdAudioPlayer.addEventListener('loadstart', () => {
         if (trackLoadingSpinner) trackLoadingSpinner.classList.remove('hidden');
       });
-      
+
       cdAudioPlayer.addEventListener('waiting', () => {
         if (trackLoadingSpinner) trackLoadingSpinner.classList.remove('hidden');
       });
-      
+
       cdAudioPlayer.addEventListener('canplay', () => {
         if (trackLoadingSpinner) trackLoadingSpinner.classList.add('hidden');
-        
+
         // Auto-play if flag is set
         if (pendingAutoPlay) {
-                    pendingAutoPlay = false;
+          pendingAutoPlay = false;
           setTimeout(() => {
             playTrack();
           }, 50); // Small delay to ensure audio is truly ready
         }
       });
-      
+
       cdAudioPlayer.addEventListener('playing', () => {
         if (trackLoadingSpinner) trackLoadingSpinner.classList.add('hidden');
       });
@@ -2543,7 +2543,7 @@
           } else {
             // Sequential next
             const nextIndex = getNextTrackIndex(currentTrackIndex, 1, false);
-            
+
             // Stop if we wrapped around (nextIndex <= currentTrackIndex)
             if (nextIndex > currentTrackIndex) {
               pendingAutoPlay = true; // Set flag for auto-play
