@@ -2270,7 +2270,7 @@
       const height = visualizerCanvas.height;
       const centerX = width / 2;
       const centerY = height / 2;
-      const coverRadius = 120; // Approximate CD cover radius
+      const coverRadius = 125; // Approximate CD cover radius
       const minBarHeight = 5; // Minimum bar height to ensure visibility
       const maxBarHeight = 80; // Maximum bar height
 
@@ -2284,10 +2284,48 @@
         // Use extracted colors or fallback to rainbow
         const useExtractedColors = dominantColors.length > 0;
 
+        // Pre-calculate constants for the loop
+        const overlap = Math.max(2, Math.floor(bufferLength * 0.06)); // ~6% of bins or at least 2
+        const overlapThreshold = bufferLength - overlap;
+        const startValues = new Float32Array(overlap); // Cache for start values
+        const invBufferLength = 1 / bufferLength;
+
         // Draw bars starting from cover edge, extending outward
         for (let i = 0; i < bufferLength; i++) {
           // Scale bar height with minimum
-          const barHeight = minBarHeight + (dataArray[i] / 255) * (maxBarHeight - minBarHeight);
+          const ratio = i * invBufferLength;
+          let transformedValue = dataArray[i] / 255 * (0.5 + Math.pow(ratio, 1.5));
+
+          // Piecewise linear dynamics (S-curve approximation)
+          if (transformedValue < 0.25) {
+            transformedValue = 0;
+          } else if (transformedValue < 0.65) {
+            transformedValue = (transformedValue - 0.25) * 2.0;
+          } else {
+            transformedValue = 0.8 + (transformedValue - 0.65) * 0.6;
+          }
+
+          // Cache the start values for blending at the end
+          if (i < overlap) {
+            startValues[i] = transformedValue;
+          }
+
+          // Apply overlap blending at the end
+          if (i >= overlapThreshold) {
+            // map last bins [bufferLength-overlap .. bufferLength-1] to start bins [0 .. overlap-1]
+            const pos = i - overlapThreshold; // 0 .. overlap-1
+            const dvStart = startValues[pos]; // Retrieve cached value
+
+            // smooth interpolation weight (use smoothstep to avoid hard edge)
+            const tRaw = overlap > 1 ? pos / (overlap - 1) : 1;
+            const t = tRaw * tRaw * (3 - 2 * tRaw); // smoothstep
+
+            // Blend so we use the normal transformedValue at the beginning of overlap,
+            // and gradually mix in the mapped start value toward the very end.
+            transformedValue = transformedValue * (1 - t) + dvStart * t * (0.7 + 0.3 * Math.random());
+          }
+
+          const barHeight = minBarHeight + transformedValue * (maxBarHeight - minBarHeight);
 
           // Calculate angle
           const angle = (i / bufferLength) * 2 * Math.PI - Math.PI / 2; // Start from top
