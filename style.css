@@ -27,6 +27,8 @@ video{
 /* no extra select styles (speed selector removed) */
 #muteBtn[aria-pressed="false"]{opacity:0.9}
 #muteBtn[aria-pressed="true"]{opacity:0.75}
+#audioProcessBtn[aria-pressed="false"]{opacity:0.7}
+#audioProcessBtn[aria-pressed="true"]{opacity:1;background:rgba(100,200,255,0.15);border-color:rgba(100,200,255,0.3)}
 #controls input[type="range"]{appearance:none;background:transparent;height:24px}
 #controls input[type="range"]::-webkit-slider-runnable-track{height:6px;background:rgba(255,255,255,0.12);border-radius:6px}
 #controls input[type="range"]::-webkit-slider-thumb{width:12px;height:12px;border-radius:50%;background:#fff;margin-top:-3px}

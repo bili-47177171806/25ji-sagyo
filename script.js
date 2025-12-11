@@ -14,6 +14,7 @@
   const volumeSlider = document.getElementById('volumeSlider');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const tzToggleBtn = document.getElementById('tzToggleBtn');
+  const audioProcessBtn = document.getElementById('audioProcessBtn');
   const orientationWarning = document.getElementById('orientation-warning');
 
   const sources = window.TIME_SYNC_SOURCES || { p1: 'p1.mp4', p2: 'p2.mp4', p3: 'p3.mp4' };
@@ -24,6 +25,14 @@
   let timezoneMode = 'local';
   // remember last non-zero volume so we can restore after unmute
   let savedVolume = 1;
+
+  // Audio processing setup using Web Audio API
+  let audioContext = null;
+  let audioSource = null;
+  let compressor = null;
+  let gainNode = null;
+  let vocalReducer = null;
+  let isAudioProcessing = false;
 
   function formatTime(d) {
     return d.toLocaleTimeString();
@@ -215,6 +224,94 @@
     });
   }
 
+  // Audio processing functions
+  function initAudioProcessing() {
+    if (audioContext) return; // Already initialized
+    
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      audioSource = audioContext.createMediaElementSource(video);
+      
+      // Create compressor (limiter) - set threshold to -40dB
+      compressor = audioContext.createDynamicsCompressor();
+      compressor.threshold.value = -40; // -40dB threshold
+      compressor.knee.value = 0; // Hard knee for limiting
+      compressor.ratio.value = 20; // High ratio for limiting
+      compressor.attack.value = 0.003; // Fast attack
+      compressor.release.value = 0.25; // Release time
+      
+      // Create gain node
+      gainNode = audioContext.createGain();
+      gainNode.gain.value = 1.3;
+      
+      // Create vocal reducer using peaking filter for 300Hz-3kHz range
+      // We'll use multiple filters to cover the vocal range
+      const vocalFilter1 = audioContext.createBiquadFilter();
+      vocalFilter1.type = 'peaking';
+      vocalFilter1.frequency.value = 800; // Center frequency for lower vocals
+      vocalFilter1.Q.value = 1.0;
+      vocalFilter1.gain.value = -8; // -8dB reduction
+      
+      const vocalFilter2 = audioContext.createBiquadFilter();
+      vocalFilter2.type = 'peaking';
+      vocalFilter2.frequency.value = 2000; // Center frequency for upper vocals
+      vocalFilter2.Q.value = 1.0;
+      vocalFilter2.gain.value = -8; // -8dB reduction
+      
+      // Connect the chain: source -> compressor -> gain -> vocal filters -> destination
+      audioSource.connect(compressor);
+      compressor.connect(gainNode);
+      gainNode.connect(vocalFilter1);
+      vocalFilter1.connect(vocalFilter2);
+      
+      // Store reference to final filter for easy disconnect
+      vocalReducer = vocalFilter2;
+    } catch (e) {
+      console.error('Failed to initialize audio processing:', e);
+      audioContext = null;
+    }
+  }
+
+  function toggleAudioProcessing() {
+    if (!audioContext) {
+      initAudioProcessing();
+      if (!audioContext) return; // Failed to initialize
+    }
+    
+    try {
+      if (isAudioProcessing) {
+        // Disconnect processing chain and connect directly to destination
+        vocalReducer.disconnect();
+        audioSource.disconnect();
+        audioSource.connect(audioContext.destination);
+        isAudioProcessing = false;
+      } else {
+        // Connect through processing chain
+        audioSource.disconnect();
+        audioSource.connect(compressor);
+        vocalReducer.connect(audioContext.destination);
+        isAudioProcessing = true;
+      }
+      
+      // Update button UI
+      if (audioProcessBtn) {
+        audioProcessBtn.setAttribute('aria-pressed', String(isAudioProcessing));
+        audioProcessBtn.title = isAudioProcessing ? 
+          '音频处理已开启（点击关闭）' : 
+          '音频处理（限幅+降低人声）';
+      }
+      
+      saveSettings();
+    } catch (e) {
+      console.error('Failed to toggle audio processing:', e);
+    }
+  }
+
+  // Audio processing button event listener
+  if (audioProcessBtn) {
+    audioProcessBtn.addEventListener('click', toggleAudioProcessing);
+  }
+
   // Persist settings to localStorage
   const SETTINGS_KEY = 'videoPlayerSettings';
 
@@ -223,7 +320,8 @@
       const s = {
         muted: !!video.muted,
         volume: Number(video.volume) || 0,
-        timezoneMode: timezoneMode
+        timezoneMode: timezoneMode,
+        audioProcessing: isAudioProcessing
       };
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
     } catch (e) {
@@ -239,6 +337,19 @@
       if (typeof s.volume === 'number') video.volume = s.volume;
       if (typeof s.muted === 'boolean') video.muted = s.muted;
       if (s.timezoneMode) timezoneMode = s.timezoneMode;
+      // Load audio processing setting (will be applied after user interaction)
+      if (typeof s.audioProcessing === 'boolean' && s.audioProcessing) {
+        // Defer enabling audio processing until after first user interaction
+        const enableOnInteraction = () => {
+          if (!isAudioProcessing) {
+            toggleAudioProcessing();
+          }
+          document.removeEventListener('click', enableOnInteraction);
+          document.removeEventListener('keydown', enableOnInteraction);
+        };
+        document.addEventListener('click', enableOnInteraction, { once: true });
+        document.addEventListener('keydown', enableOnInteraction, { once: true });
+      }
       // reflect UI (no playbackRate control)
     } catch (e) {
       // ignore

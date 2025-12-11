@@ -11,7 +11,7 @@
 </head>
 <body>
   <div id="app">
-    <video id="video" autoplay muted playsinline preload="metadata"></video>
+    <video id="video" autoplay muted playsinline preload="metadata" crossorigin="anonymous"></video>
       <div id="overlay">
         <div id="info">
           Time (<span id="tzLabel">Local</span>): <span id="localTime">--:--:--</span>
@@ -21,6 +21,7 @@
         <div id="controls" role="toolbar" aria-label="Video controls">
           <button id="muteBtn" aria-pressed="true" title="Mute / Unmute">🔊</button>
           <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume" />
+          <button id="audioProcessBtn" aria-pressed="false" title="音频处理（限幅+降低人声）">🎚️</button>
           <button id="fullscreenBtn" title="Fullscreen">Fullscreen</button>
           <button id="tzToggleBtn" title="Toggle timezone">Toggle TZ</button>
           <button id="pomodoroBtn" title="Pomodoro Timer">🍅</button>
