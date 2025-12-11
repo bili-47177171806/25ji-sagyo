@@ -2089,8 +2089,8 @@
           toggleVisualizationBtn.classList.toggle('active', visualizationEnabled);
         }
       } else {
-        // Default: show visualization
-        visualizationEnabled = true;
+        // Default: hide visualization
+        visualizationEnabled = false;
       }
     } catch (e) {}
 
