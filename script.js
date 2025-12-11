@@ -866,6 +866,7 @@
     let currentMusicId = null; // Currently playing music ID (for tracking across category changes)
     let currentVocalId = null; // Currently selected vocal version
     let preferredVocalType = 'sekai'; // Default preference
+    let preferredCharacterIds = []; // Preferred character IDs for next track selection
     let isPlaying = false;
     let isShuffleOn = false;
     let isRepeatOn = false;
@@ -881,6 +882,7 @@
       SHUFFLE: 'cdPlayer_shuffle',
       REPEAT: 'cdPlayer_repeat',
       VOCAL_PREFERENCE: 'cdPlayer_vocalPreference',
+      PREFERRED_CHARACTERS: 'cdPlayer_preferredCharacters',
       FAVORITES: 'cdPlayer_favorites',
       PLAYLISTS: 'cdPlayer_playlists'
     };
@@ -893,6 +895,7 @@
         localStorage.setItem(STORAGE_KEYS.SHUFFLE, isShuffleOn);
         localStorage.setItem(STORAGE_KEYS.REPEAT, isRepeatOn);
         localStorage.setItem(STORAGE_KEYS.VOCAL_PREFERENCE, preferredVocalType);
+        localStorage.setItem(STORAGE_KEYS.PREFERRED_CHARACTERS, JSON.stringify(preferredCharacterIds));
         localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify([...favorites]));
 
         // Serialize playlists (convert Sets to Arrays)
@@ -933,6 +936,11 @@
         const savedVocalPref = localStorage.getItem(STORAGE_KEYS.VOCAL_PREFERENCE);
         if (savedVocalPref !== null) {
           preferredVocalType = savedVocalPref;
+        }
+
+        const savedCharacters = localStorage.getItem(STORAGE_KEYS.PREFERRED_CHARACTERS);
+        if (savedCharacters !== null) {
+          preferredCharacterIds = JSON.parse(savedCharacters) || [];
         }
 
         const savedFavorites = localStorage.getItem(STORAGE_KEYS.FAVORITES);
@@ -1517,19 +1525,53 @@
       }
     }
 
+    // Check if a music has vocals matching preferred characters
+    function checkMusicHasPreferredCharacters(musicId) {
+      if (!preferredCharacterIds || preferredCharacterIds.length === 0) return false;
+      
+      // Find vocals for this music that contain any of the preferred characters
+      const matchingVocals = musicVocalsData.filter(v => {
+        if (v.musicId !== musicId) return false;
+        if (!v.characters || v.characters.length === 0) return false;
+        
+        const vocalCharIds = v.characters
+          .filter(c => c.characterType === 'game_character')
+          .map(c => c.characterId);
+        
+        // Check if any preferred character is in this vocal
+        return preferredCharacterIds.some(prefId => vocalCharIds.includes(prefId));
+      });
+      
+      return matchingVocals.length > 0;
+    }
+
     // Check if a music has a specific vocal type
     function checkMusicHasVocalType(musicId, type) {
       if (!type) return true;
       return musicVocalsData.some(v => v.musicId === musicId && v.musicVocalType === type);
     }
 
-    // Find next track index based on preference
+    // Find next track index based on preference (character preference takes priority)
     function getNextTrackIndex(currentIndex, direction, isShuffle) {
       let attempts = 0;
       let nextIndex = currentIndex;
       const maxAttempts = filteredMusicData.length;
 
       if (isShuffle) {
+        // First try to find music with preferred characters
+        if (preferredCharacterIds.length > 0) {
+          while (attempts < maxAttempts) {
+            const r = Math.floor(Math.random() * filteredMusicData.length);
+            const music = filteredMusicData[r];
+            if (checkMusicHasPreferredCharacters(music.id)) {
+              return r;
+            }
+            attempts++;
+          }
+        }
+        
+        // Fallback to vocal type preference
+        attempts = 0;
         while (attempts < maxAttempts) {
           const r = Math.floor(Math.random() * filteredMusicData.length);
           const music = filteredMusicData[r];
@@ -1540,6 +1582,21 @@
         }
         return Math.floor(Math.random() * filteredMusicData.length);
       } else {
+        // First try to find music with preferred characters
+        if (preferredCharacterIds.length > 0) {
+          while (attempts < maxAttempts) {
+            nextIndex = (nextIndex + direction + filteredMusicData.length) % filteredMusicData.length;
+            const music = filteredMusicData[nextIndex];
+            if (checkMusicHasPreferredCharacters(music.id)) {
+              return nextIndex;
+            }
+            attempts++;
+          }
+        }
+        
+        // Fallback to vocal type preference
+        nextIndex = currentIndex;
+        attempts = 0;
         while (attempts < maxAttempts) {
           nextIndex = (nextIndex + direction + filteredMusicData.length) % filteredMusicData.length;
           const music = filteredMusicData[nextIndex];
@@ -1891,6 +1948,14 @@
 
       currentVocalId = selectedVocal.id;
 
+      // Update preferred characters based on selected vocal
+      if (selectedVocal.characters && selectedVocal.characters.length > 0) {
+        preferredCharacterIds = selectedVocal.characters
+          .filter(c => c.characterType === 'game_character')
+          .map(c => c.characterId);
+        saveSettings(); // Save the preference
+      }
+
       // Always display original title
       const displayTitle = music.title;
 
@@ -1938,6 +2003,14 @@
           });
 
           btn.addEventListener('click', () => {
+            // Update preferred characters when manually selecting a vocal
+            if (vocal.characters && vocal.characters.length > 0) {
+              preferredCharacterIds = vocal.characters
+                .filter(c => c.characterType === 'game_character')
+                .map(c => c.characterId);
+              saveSettings();
+            }
+            
             const wasPlaying = isPlaying;
             if (wasPlaying) pauseTrack(); // Pause current first
             pendingAutoPlay = wasPlaying; // Set flag if was playing
