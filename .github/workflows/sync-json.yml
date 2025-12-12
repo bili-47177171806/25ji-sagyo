@@ -1,4 +1,5 @@
 name: Sync JSON to OSS
+permissions: {}
 
 on:
   schedule:
