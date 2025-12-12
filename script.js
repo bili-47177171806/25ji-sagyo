@@ -1841,10 +1841,19 @@
         const isFav = favorites.has(music.id);
         const isLocal = music.isLocal;
 
+        const escapeHtml = (text) => {
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        };
+
+        const escapedTitle = escapeHtml(displayTitle);
+        const escapedArtist = escapeHtml(displayArtist);
+
         item.innerHTML = `
           <div class="music-item-content">
-            <div class="music-item-title" data-full-text="${displayTitle.replace(/"/g, '&quot;')}">${displayTitle}</div>
-            <div class="music-item-artist">${displayArtist}</div>
+            <div class="music-item-title" data-full-text="${escapedTitle.replace(/"/g, '&quot;')}">${escapedTitle}</div>
+            <div class="music-item-artist">${escapedArtist}</div>
           </div>
           <div class="music-item-actions" style="${isLocal ? '' : ''}">
             ${isLocal ? `
