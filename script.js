@@ -1753,18 +1753,18 @@
         musicList.innerHTML = '<div class="loading">加载音乐列表中...</div>';
 
         // Fetch musics.json
-        const musicsResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/musics.json');
+        const musicsResponse = await fetch('https://pjsekai.oss-cn-shanghai.aliyuncs.com/musics.json');
         if (!musicsResponse.ok) throw new Error('Failed to fetch musics');
         musicData = await musicsResponse.json();
 
         // Fetch musicVocals.json
-        const vocalsResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/musicVocals.json');
+        const vocalsResponse = await fetch('https://pjsekai.oss-cn-shanghai.aliyuncs.com/musicVocals.json');
         if (!vocalsResponse.ok) throw new Error('Failed to fetch music vocals');
         musicVocalsData = await vocalsResponse.json();
 
         // Fetch Chinese translations
         try {
-          const titlesResponse = await fetch('https://pj-sekai.oss-cn-shanghai.aliyuncs.com/music_titles.json');
+          const titlesResponse = await fetch('https://pjsekai.oss-cn-shanghai.aliyuncs.com/music_titles.json');
           if (titlesResponse.ok) {
             musicTitlesZhCN = await titlesResponse.json();
           }
@@ -2024,7 +2024,7 @@
             dominantColors = extractColorsFromCover();
           };
         } else {
-          albumCover.src = 'https://pj-sekai.oss-cn-shanghai.aliyuncs.com/mysekai/music_record_soundtrack/jacket/jacket_s_soundtrack_1.png';
+          albumCover.src = 'https://pjsekai.oss-cn-shanghai.aliyuncs.com/mysekai/music_record_soundtrack/jacket/jacket_s_soundtrack_1.png';
           albumCover.style.opacity = '1';
           albumCover.onload = () => {
             dominantColors = extractColorsFromCover();
@@ -2165,7 +2165,7 @@
       }
 
       // Update album cover with fallback
-      const primaryCoverUrl = `https://pj-sekai.oss-cn-shanghai.aliyuncs.com/music/jacket/${music.assetbundleName}/${music.assetbundleName}.png`;
+      const primaryCoverUrl = `https://pjsekai.oss-cn-shanghai.aliyuncs.com/music/jacket/${music.assetbundleName}/${music.assetbundleName}.png`;
       const fallbackCoverUrl = `https://storage.nightcord.de5.net/music/jacket/${music.assetbundleName}/${music.assetbundleName}.png`;
 
       // Set crossOrigin BEFORE setting src to enable CORS
@@ -2189,7 +2189,7 @@
       };
 
       // Build audio URL with primary source
-      const primaryAudioUrl = `https://pj-sekai.oss-cn-shanghai.aliyuncs.com/music/long/${selectedVocal.assetbundleName}/${selectedVocal.assetbundleName}.flac`;
+      const primaryAudioUrl = `https://pjsekai.oss-cn-shanghai.aliyuncs.com/music/long/${selectedVocal.assetbundleName}/${selectedVocal.assetbundleName}.flac`;
       const fallbackAudioUrl = `https://storage.nightcord.de5.net/music/long/${selectedVocal.assetbundleName}/${selectedVocal.assetbundleName}.flac`;
 
       // Clear previous onerror handler to prevent conflicts
