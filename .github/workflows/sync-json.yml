@@ -27,6 +27,6 @@ jobs:
           
       - name: Sync files
         run: |
-          ossutil cp -f files/musics.json oss://pj-sekai/musics.json
-          ossutil cp -f files/musicVocals.json oss://pj-sekai/musicVocals.json
-          ossutil cp -f files/music_titles.json oss://pj-sekai/music_titles.json
+          ossutil cp -f files/musics.json oss://pjsekai/musics.json
+          ossutil cp -f files/musicVocals.json oss://pjsekai/musicVocals.json
+          ossutil cp -f files/music_titles.json oss://pjsekai/music_titles.json
