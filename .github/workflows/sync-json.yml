@@ -19,14 +19,42 @@ jobs:
           curl -fSL -o files/music_titles.json "https://i18n-json.sekai.best/zh-CN/music_titles.json"
           
       - name: Upload to OSS
-        uses: manyuanrong/setup-ossutil@v2.0
-        with:
-          endpoint: oss-cn-qingdao.aliyuncs.com
-          access-key-id: ${{ secrets.OSS_ACCESS_KEY_ID }}
-          access-key-secret: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
-          
-      - name: Sync files
         run: |
-          ossutil cp -f files/musics.json oss://forcass-res/AttachFiles/171806/musics.json
-          ossutil cp -f files/musicVocals.json oss://forcass-res/AttachFiles/171806/musicVocals.json
-          ossutil cp -f files/music_titles.json oss://forcass-res/AttachFiles/171806/music_titles.json
+          USERID="171806"
+          BUCKET="forcass-res"
+          HOST="https://forcass-res.oss-cn-qingdao.aliyuncs.com"
+          OSS_ACCESS_KEY_ID="LTAI5tEE1w8jVQ2WfeJqCdnD"
+          
+          upload_file() {
+            local FILE_PATH=$1
+            local OSS_KEY=$2
+            local FILENAME=$(basename "$FILE_PATH")
+            
+            # 获取签名
+            RESPONSE=$(curl -s "https://webservice.forclass.net/File/GetOssPolicy2Signature?userid=${USERID}&bucket=${BUCKET}")
+            POLICY=$(echo "$RESPONSE" | jq -r '.[0]')
+            SIGNATURE=$(echo "$RESPONSE" | jq -r '.[1]')
+            
+            # 上传
+            HTTP_CODE=$(curl -s -X POST "$HOST" \
+              -F "policy=${POLICY}" \
+              -F "Signature=${SIGNATURE}" \
+              -F "bucket=${BUCKET}" \
+              -F "key=${OSS_KEY}" \
+              -F "OSSAccessKeyId=${OSS_ACCESS_KEY_ID}" \
+              -F "success_action_status=201" \
+              -F "file=@${FILE_PATH}" \
+              -w "%{http_code}" \
+              -o /dev/null)
+            
+            if [ "$HTTP_CODE" == "201" ]; then
+              echo "✅ ${FILENAME} uploaded"
+            else
+              echo "❌ ${FILENAME} failed (HTTP ${HTTP_CODE})"
+              exit 1
+            fi
+          }
+          
+          upload_file "files/musics.json" "AttachFiles/171806/musics.json"
+          upload_file "files/musicVocals.json" "AttachFiles/171806/musicVocals.json"
+          upload_file "files/music_titles.json" "AttachFiles/171806/music_titles.json"
