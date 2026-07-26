@@ -40,7 +40,15 @@
       });
 
       if (!response.ok) {
-        const err = new Error(`API error: ${response.status}`);
+        // Gateway 错误信封为 { error: true, message, details? }
+        let detail = `API error: ${response.status}`;
+        try {
+          const body = await response.json();
+          if (body?.message) detail = body.message;
+        } catch (_) {
+          /* ignore */
+        }
+        const err = new Error(detail);
         err.status = response.status;
         throw err;
       }
