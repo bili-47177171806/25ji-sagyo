@@ -257,7 +257,8 @@ export function displayMusicList(list, loadTrack, pauseTrack, filterMusicListFn)
 
     return `
       <div class="music-item-content">
-        <div class="music-item-title" data-full-text="${escapedTitle.replace(/"/g, '&quot;')}">${escapedTitle}${platformBadge}</div>
+        <!-- escapeHtml 现在已经转义引号（format.js），不再需要这里手工补一次 -->
+        <div class="music-item-title" data-full-text="${escapedTitle}">${escapedTitle}${platformBadge}</div>
         <div class="music-item-artist">${escapedArtist}</div>
       </div>
       <div class="music-item-actions">

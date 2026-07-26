@@ -23,7 +23,26 @@ export function formatTime(seconds) {
  * @returns {string}
  */
 export function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  /*
+   * 原本是 `div.textContent → div.innerHTML` 的写法。那条路只转义
+   * `& < >` —— **引号不转**，因为 innerHTML 序列化文本节点时本来就不转引号
+   * （引号只在序列化属性值时才转）。
+   *
+   * 元素上下文够用，插进 `value="…"` / `data-x="…"` 这类属性时会被闭合。
+   *
+   * `js/utils/helpers.js` 里同名函数早就因为这个原因改成显式五字符了，
+   * 这里一直没跟上 —— 于是同一个仓里两个 `escapeHtml` 语义不同，
+   * 而调用方看不出区别。
+   *
+   * 调用点 `music-list-ui.js` 曾为此手工补了一次 `.replace(/"/g,'&quot;')`；
+   * 那说明作者知道这个坑，但也说明安全性依赖「每个属性用法都记得补」。
+   * 统一之后不再需要。
+   */
+  if (text === null || text === undefined) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

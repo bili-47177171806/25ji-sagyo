@@ -446,9 +446,20 @@ class TodoList {
 
   // --- Utils ---
   escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    /*
+     * 与 `js/utils/format.js` 同样的理由：`div.textContent → innerHTML`
+     * 不转义引号，进属性上下文会被闭合。当前只用在元素内容里（第 319 行），
+     * 今天安全 —— 但下一个属性用法不会有任何提示。
+     *
+     * 全仓四份 escapeHtml 现在语义一致，`test/escape-html.test.mjs` 钉住。
+     */
+    if (text === null || text === undefined) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
   
   // --- Global Listeners ---
