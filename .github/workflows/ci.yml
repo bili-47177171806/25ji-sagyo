@@ -9,3 +9,14 @@ on:
 jobs:
   check:
     uses: 25-ji-code-de/.github/.github/workflows/static-check.yml@main
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      # 无依赖：测试用 vm 搭最小 window 环境后按加载顺序求值
+      - name: Test
+        run: node --test "test/*.test.mjs"
