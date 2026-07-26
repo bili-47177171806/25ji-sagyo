@@ -1,9 +1,15 @@
+# CSP 分两条：强制生效的四条零风险指令，加一条 Report-Only 的完整策略。
+# 本站的外部依赖是四个静态站里最多的：音乐 API、CDN、字体、hls.js 拉的流媒体。
+# media-src / connect-src / img-src 用 https: 兜底，是因为播放源由用户导入的
+# 歌单决定，无法预先枚举 —— 这正是 Report-Only 阶段要收集的数据。
 /*
   Cache-Control: no-cache
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
 
 # 内容固定的二进制资源，改名即换版本
 /sounds/*
