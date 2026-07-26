@@ -41,9 +41,16 @@
    * @returns {string}
    */
   function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (text === null || text === undefined) return '';
+    // 原本用 div.textContent → innerHTML 的写法，只转义 < > &，**不转义引号**。
+    // 元素上下文够用，但插进 value="…" / onclick="…" 这类属性时会被闭合。
+    // 这里改成显式转义五个字符，两种上下文都安全。
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
