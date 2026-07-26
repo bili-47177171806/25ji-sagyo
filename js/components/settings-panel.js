@@ -452,6 +452,10 @@
     const isDev = APP_VERSION.commit.startsWith('__');
     const isUpToDate = latestCommitInfo && (APP_VERSION.fullSha === latestCommitInfo.sha || APP_VERSION.commit === latestCommitInfo.shortSha);
     
+    // latestCommitInfo 的字段来自 GitHub API 的 commit 数据（message 是提交信息），
+    // 会被插进 insertAdjacentHTML —— 必须转义。
+    const esc = window.AppHelpers.escapeHtml;
+
     const modalHtml = `
       <div class="version-modal-overlay active" id="versionModal">
         <div class="version-modal">
@@ -482,12 +486,12 @@
 
           ${latestCommitInfo && !isUpToDate ? `
             <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
-              <div class="version-label" style="margin-bottom: 8px;">最新版本 (${latestCommitInfo.shortSha})</div>
+              <div class="version-label" style="margin-bottom: 8px;">最新版本 (${esc(latestCommitInfo.shortSha)})</div>
               <div style="font-size: 13px; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;">
-                ${latestCommitInfo.message}
+                ${esc(latestCommitInfo.message)}
               </div>
               <div style="font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px;">
-                发布于 ${latestCommitInfo.date}
+                发布于 ${esc(latestCommitInfo.date)}
               </div>
             </div>
           ` : ''}
@@ -495,7 +499,7 @@
           <div class="version-actions">
             <button class="version-btn version-btn-secondary" onclick="document.getElementById('versionModal').remove()">关闭</button>
             ${latestCommitInfo && !isUpToDate ? `
-              <button class="version-btn version-btn-primary" onclick="(function() { const url = new URL(window.location.href); url.searchParams.set('v', '${latestCommitInfo.shortSha}'); window.location.href = url.toString(); })()">
+              <button class="version-btn version-btn-primary" onclick="(function() { const url = new URL(window.location.href); url.searchParams.set('v', '${esc(latestCommitInfo.shortSha)}'); window.location.href = url.toString(); })()">
                 刷新页面以更新
               </button>
             ` : ''}
