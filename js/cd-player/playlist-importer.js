@@ -90,6 +90,19 @@ export async function fetchPlaylistWithFallback(server, id) {
 }
 
 /**
+ * Validate that a URL uses HTTPS to prevent SSRF via attacker-controlled URLs
+ * @param {string} url - URL to validate
+ * @returns {boolean}
+ */
+function isSafeUrl(url) {
+  try {
+    return new URL(url).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Convert API response to internal format
  * @param {Array} tracks - Tracks from API
  * @param {string} server - Server type
@@ -99,9 +112,9 @@ export function convertToLocalFormat(tracks, server) {
   const converted = [];
 
   for (const track of tracks) {
-    // Skip tracks without valid URL
-    if (!track.url) {
-      console.warn('Skipping track without URL:', track.name);
+    // Skip tracks without valid HTTPS URL (prevents SSRF via attacker-controlled URLs)
+    if (!track.url || !isSafeUrl(track.url)) {
+      console.warn('Skipping track without valid HTTPS URL:', track.name);
       continue;
     }
 
@@ -122,7 +135,7 @@ export function convertToLocalFormat(tracks, server) {
       isLocal: false,
       isImported: true,
       audioUrl: track.url,
-      coverUrl: track.pic, // Store original URL, don't resolve yet
+      coverUrl: isSafeUrl(track.pic) ? track.pic : null, // Only store HTTPS URLs
       lrcUrl: track.lrc || null,
       assetbundleName: 'imported',
       server: server
