@@ -154,8 +154,7 @@ describe('URL 协议 —— #8 会改变这一组', () => {
       [{ name: 'x', url: 'http://cdn.example/song.mp3', pic: 'http://cdn.example/c.jpg' }],
       'netease',
     );
-    assert.equal(list.length, 1, '当前行为是保留 —— 若这条红了，说明 #8 已合并');
-    assert.equal(list[0].audioUrl, 'http://cdn.example/song.mp3');
+    assert.equal(list.length, 0);
   });
 
   test('http:// 的封面当前会被保留', () => {
@@ -163,7 +162,7 @@ describe('URL 协议 —— #8 会改变这一组', () => {
       [{ name: 'x', url: 'https://cdn.example/s.mp3', pic: 'http://cdn.example/c.jpg' }],
       'netease',
     );
-    assert.equal(m.coverUrl, 'http://cdn.example/c.jpg');
+    assert.equal(m.coverUrl, null);
   });
 
   test('相对路径与畸形 URL 当前也会被保留', () => {
@@ -171,7 +170,7 @@ describe('URL 协议 —— #8 会改变这一组', () => {
       [{ name: 'x', url: '/local/path.mp3', pic: 'not a url' }],
       'netease',
     );
-    assert.equal(list.length, 1);
+    assert.equal(list.length, 0);
   });
 });
 

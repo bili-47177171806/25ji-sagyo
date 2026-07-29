@@ -5312,6 +5312,109 @@ input:checked + .slider:before {
   }
 }
 
+.focus-leaderboard-header,
+.focus-leaderboard-name-row,
+.focus-leaderboard-row,
+.focus-leaderboard-me {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.focus-leaderboard-header {
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.focus-leaderboard-header p,
+.focus-leaderboard-status {
+  color: var(--text-secondary, #999);
+  font-size: 13px;
+}
+
+.focus-leaderboard-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.focus-leaderboard-name-row {
+  margin-bottom: 16px;
+}
+
+.focus-leaderboard-name-row .setting-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.focus-leaderboard-controls {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+}
+
+.focus-leaderboard-control {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.focus-leaderboard-control.active {
+  border-bottom-color: var(--accent-color, #a98bd4);
+}
+
+.focus-leaderboard-status {
+  min-height: 24px;
+  padding: 10px 0 6px;
+}
+
+.focus-leaderboard-rows {
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+}
+
+.focus-leaderboard-row {
+  min-height: 46px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+}
+
+.focus-leaderboard-rank {
+  width: 48px;
+  font-family: monospace;
+}
+
+.focus-leaderboard-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focus-leaderboard-score {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.focus-leaderboard-me {
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 12px 0;
+  border-bottom: 2px solid var(--accent-color, #a98bd4);
+  font-weight: 600;
+}
+
+.focus-leaderboard-empty {
+  padding: 28px 0;
+  text-align: center;
+  color: var(--text-secondary, #999);
+}
+
 :focus-visible {
   outline: 2px solid rgba(164, 140, 214, 0.9);
   outline-offset: 2px;
