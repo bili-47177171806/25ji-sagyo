@@ -26,6 +26,9 @@
       const minutes = score % 60;
       return hours ? `${hours}h ${minutes}min` : `${minutes}min`;
     }
+    if (metric === 'songs_played') return `${score} 首`;
+    if (metric === 'streak_days') return `${score} 天`;
+    if (metric === 'achievements_unlocked') return `${score} 个成就`;
     return `${score} 个`;
   };
 
