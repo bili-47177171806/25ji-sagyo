@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <!-- SPDX-FileCopyrightText: 2025-2026 The 25-ji-code-de Team -->
-<html lang="zh-CN">
+<html lang="zh-CN" class="world-night">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -10,7 +10,11 @@
   <title>『25时、Nightcord见。』成员们的 24 小时工作日常</title>
   <meta name="description" content="『25时、Nightcord见。』成员们的 24 小时工作日常 — 沉浸式作业陪伴：番茄钟、CD 播放器、世界时钟与音频可视化等实用工具。" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/vendor/sekai-design/primitives.css">
+<link rel="stylesheet" href="css/vendor/sekai-design/contract.css">
+<link rel="stylesheet" href="css/vendor/sekai-design/world-system.css">
+<link rel="stylesheet" href="css/vendor/sekai-design/world-night.css">
+<link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="css/icons.css">
 </head>
 <body>
@@ -396,6 +400,9 @@
             <button class="sidebar-btn" data-tab="stats">
               <span class="icon">📊</span> <span class="label" data-i18n="settings.sidebar.stats">专注统计</span>
             </button>
+            <button class="sidebar-btn" data-tab="leaderboard">
+              <span class="icon">🏅</span> <span class="label">排行榜</span>
+            </button>
             <button class="sidebar-btn" data-tab="achievements">
               <span class="icon">🏆</span> <span class="label" data-i18n="settings.sidebar.achievements">成就系统</span>
             </button>
@@ -571,6 +578,44 @@
               </div>
             </div>
 
+            <!-- Leaderboard Tab -->
+            <div class="tab-content" id="tab-leaderboard">
+              <div id="focus-leaderboard-logged-out" class="empty-state">
+                <div class="empty-icon">🏅</div>
+                <h3>专注排行榜</h3>
+                <p>登录后查看匿名专注排名与自己的名次。</p>
+                <button class="primary-btn" id="focusLeaderboardLoginBtn">登录 / 注册</button>
+              </div>
+              <div id="focus-leaderboard-content" class="sekai-hidden">
+                <div class="focus-leaderboard-header">
+                  <div>
+                    <h3>专注排行榜</h3>
+                    <p>成绩默认匿名展示</p>
+                  </div>
+                  <label class="focus-leaderboard-identity">
+                    <input id="focusLeaderboardShowProfile" type="checkbox">
+                    <span>公开昵称</span>
+                  </label>
+                </div>
+                <div class="focus-leaderboard-name-row">
+                  <input id="focusLeaderboardDisplayName" class="setting-input" maxlength="64" placeholder="榜单昵称">
+                  <button id="focusLeaderboardSaveProfile" class="sekai-secondary-btn">保存</button>
+                </div>
+                <div class="focus-leaderboard-controls" role="group" aria-label="选择排行榜">
+                  <button class="focus-leaderboard-control active" data-board-id="25ji-focus-weekly">本周专注</button>
+                  <button class="focus-leaderboard-control" data-board-id="25ji-focus-monthly">本月专注</button>
+                  <button class="focus-leaderboard-control" data-board-id="25ji-pomodoros-weekly">本周番茄钟</button>
+                  <button class="focus-leaderboard-control" data-board-id="25ji-focus-all-time">累计专注</button>
+                  <button class="focus-leaderboard-control" data-board-id="25ji-songs-all-time">累计听歌</button>
+                  <button class="focus-leaderboard-control" data-board-id="25ji-streak-best">最高连续登录</button>
+                  <button class="focus-leaderboard-control" data-board-id="25ji-achievements">成就进度</button>
+                </div>
+                <div id="focusLeaderboardStatus" class="focus-leaderboard-status" role="status">加载中...</div>
+                <div id="focusLeaderboardRows" class="focus-leaderboard-rows"></div>
+                <div id="focusLeaderboardMe" class="focus-leaderboard-me sekai-hidden"></div>
+              </div>
+            </div>
+
             <!-- Achievements Tab -->
             <div class="tab-content" id="tab-achievements">
               <div class="achievements-list"></div>
@@ -718,6 +763,7 @@
   <script src="js/components/world-clock.js"></script>
   <script src="js/components/health-reminder.js"></script>
   <script src="js/components/settings-panel.js"></script>
+  <script src="js/components/leaderboard-panel.js"></script>
   <script src="js/components/sync-panel.js"></script>
   <script src="js/components/todo-list.js"></script>
   <script src="js/components/breathing.js"></script>

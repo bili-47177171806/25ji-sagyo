@@ -1,10 +1,4 @@
-// @sekai-vendor @25-ji-code-de/sekai-auth@v0.1.2 dist/sekai-auth.global.js
-//
-// 从上游仓库原样复制，请勿手工编辑。
-// 25ji 没有构建步骤且全部脚本以经典 <script> 同步加载，所以用 IIFE 产物。
-// CI 会校验本文件与上游 tag 逐字一致。
-// 上游：https://github.com/25-ji-code-de/sekai-auth
-
+// @sekai-vendor @25-ji-code-de/sekai-auth@v0.2.0 dist/sekai-auth.global.js
 (function (global) {
 'use strict';
 /*
@@ -35,6 +29,25 @@ const REFRESH_SKEW_MS = 5 * 60 * 1000;
 
 /** expires_in 缺省时按 1 小时处理（生态约定）。 */
 const DEFAULT_EXPIRES_IN_S = 3600;
+
+/**
+ * ID Token 允许的签名算法白名单。
+ *
+ * 只收非对称算法。`alg: none` 与任何 HMAC 算法都不在表里，
+ * 于是「把 JWKS 公钥当 HMAC 密钥」的经典伪造攻击直接不成立。
+ * sekai-pass 签 ID Token 用的是 ES256。
+ */
+const ID_TOKEN_ALGS = {
+  __proto__: null,
+  ES256: {
+    importParams: { name: 'ECDSA', namedCurve: 'P-256' },
+    verifyParams: { name: 'ECDSA', hash: { name: 'SHA-256' } },
+  },
+  RS256: {
+    importParams: { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    verifyParams: { name: 'RSASSA-PKCS1-v1_5' },
+  },
+};
 
 /**
  * 从 `byteLength` 个随机字节生成 hex 串。
@@ -129,7 +142,36 @@ const DEFAULT_KEY_SUFFIXES = {
   user: 'user',
   codeVerifier: 'code_verifier',
   state: 'state',
+  nonce: 'nonce',
 };
+
+/**
+ * 解码 JWT 的 payload —— **不验签**。
+ *
+ * 只用于读取 claim。任何安全判断都必须建立在 {@link SekaiAuth#validateIdToken}
+ * 的验签之上，不能只看这里的返回值。
+ * @param {string} token
+ * @returns {object|null}
+ */
+function decodeJwtPayload(token) {
+  try {
+    const parts = String(token).split('.');
+    if (parts.length !== 3) return null;
+    const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
+
+/** base64url → ArrayBuffer。 */
+function base64UrlDecode(str) {
+  const padded = String(str).replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0)).buffer;
+}
 
 /**
  * SEKAI Pass OAuth 2.1 + PKCE 客户端。
@@ -152,6 +194,9 @@ class SekaiAuth {
    * @param {() => void} [options.onAuthExpired] refresh token 失效时触发
    * @param {Storage} [options.localStorage]
    * @param {Storage} [options.sessionStorage]
+   * @param {typeof fetch} [options.fetch] HTTP transport；默认调用 `globalThis.fetch`
+   * @param {(url: string) => void|Promise<void>} [options.navigate]
+   *        授权页导航；默认写入 `globalThis.location.href`
    */
   constructor(options = {}) {
     if (!options.clientId) {
@@ -182,8 +227,27 @@ class SekaiAuth {
     this._local = options.localStorage ?? globalThis.localStorage;
     this._session = options.sessionStorage ?? globalThis.sessionStorage;
 
+    // Transport hooks：native shell / 测试可注入。不传时与旧行为逐字一致。
+    // 默认路径在**调用时**再取 globalThis.fetch / location —— 不能在构造时 bind，
+    // 否则测试（以及运行时替换 polyfill）改了全局也接不上。
+    this._fetch =
+      options.fetch ??
+      ((...args) => globalThis.fetch(...args));
+    this._navigate =
+      options.navigate ??
+      ((url) => {
+        globalThis.location.href = url;
+      });
+
     /** @type {Promise<string|null>|null} single-flight refresh */
     this._refreshPromise = null;
+    /** @type {Promise<object[]>|null} JWKS 缓存 */
+    this._jwksPromise = null;
+  }
+
+  /** 本次配置的 scope 是否是 OIDC 请求（含 openid）。 */
+  isOidcRequest() {
+    return String(this.scope).split(/\s+/).includes('openid');
   }
 
   // ---------------------------------------------------------------- endpoints
@@ -208,7 +272,7 @@ class SekaiAuth {
     const url = `${this.issuer.replace(/\/$/, '')}/.well-known/openid-configuration`;
     let doc;
     try {
-      const response = await fetch(url);
+      const response = await this._fetch(url);
       if (!response.ok) {
         throw new SekaiAuthError(`OIDC discovery failed: HTTP ${response.status}`, {
           code: 'discovery_failed',
@@ -235,6 +299,7 @@ class SekaiAuth {
       token: doc.token_endpoint,
       userinfo: doc.userinfo_endpoint,
       revoke: doc.revocation_endpoint,
+      jwks: doc.jwks_uri,
     };
     return this._endpoints;
   }
@@ -274,7 +339,17 @@ class SekaiAuth {
       code_challenge_method: 'S256',
     });
 
-    globalThis.location.href = `${endpoints.authorize}?${params.toString()}`;
+    // OIDC nonce：把 ID Token 绑定到本次授权请求，防止别处签发的 ID Token
+    // 被注入进来。只有请求 openid scope 时才有意义。
+    if (this.isOidcRequest()) {
+      const nonce = randomHex(16);
+      this._session.setItem(this.keys.nonce, nonce);
+      params.set('nonce', nonce);
+    } else {
+      this._session.removeItem(this.keys.nonce);
+    }
+
+    await this._navigate(`${endpoints.authorize}?${params.toString()}`);
   }
 
   /**
@@ -328,9 +403,231 @@ class SekaiAuth {
       code_verifier: codeVerifier,
     });
 
-    this._persistTokens(tokens);
-    this._clearPkce();
-    return tokens;
+    // 先取出本次流程存下的 nonce。ID Token 必须在落盘 token 之前验完：
+    // 否则验签失败会把攻击者提供的 access/refresh token 留在本地。
+    const expectedNonce = this._session.getItem(this.keys.nonce);
+
+    try {
+      // 拿到 ID Token 就必须验 —— 否则 nonce 只是走了个过场
+      if (tokens.id_token) {
+        await this.validateIdToken(tokens.id_token, { nonce: expectedNonce });
+      }
+      this._persistTokens(tokens);
+      return tokens;
+    } finally {
+      // 成功失败都作废 PKCE 临时状态，防止回放。
+      this._clearPkce();
+    }
+  }
+
+  /**
+   * 验证 ID Token：签名 + iss / aud / exp / nonce。
+   *
+   * 签名用 issuer 的 JWKS 验（走 discovery 的 `jwks_uri`，没有就按
+   * `<issuer>/.well-known/jwks.json` 推）。**不验签的 nonce 校验没有意义** ——
+   * 能注入 token 的攻击者同样能伪造 nonce，所以这两步必须一起做。
+   *
+   * @param {string} idToken
+   * @param {{nonce?: string|null, clockSkewSec?: number}} [options]
+   * @returns {Promise<object>} 验证通过的 claim
+   * @throws {SekaiAuthError} 任何一项不通过
+   */
+  async validateIdToken(idToken, options = {}) {
+    const { nonce = null, clockSkewSec = 60 } = options;
+
+    const parts = String(idToken).split('.');
+    if (parts.length !== 3) {
+      throw new SekaiAuthError('ID token is malformed', { code: 'invalid_id_token' });
+    }
+
+    const claims = decodeJwtPayload(idToken);
+    if (!claims) {
+      throw new SekaiAuthError('ID token payload is not valid JSON', {
+        code: 'invalid_id_token',
+      });
+    }
+
+    let header;
+    try {
+      header = JSON.parse(new TextDecoder().decode(base64UrlDecode(parts[0])));
+    } catch {
+      throw new SekaiAuthError('ID token header is not valid JSON', {
+        code: 'invalid_id_token',
+      });
+    }
+
+    await this._verifyIdTokenSignature(idToken, header);
+
+    // iss：必须是配置的 issuer（走 discovery 时就是它；显式端点时从 authorize 推）
+    const expectedIssuer = this.issuer ?? this._issuerFromEndpoints();
+    if (expectedIssuer && claims.iss !== expectedIssuer.replace(/\/$/, '')) {
+      throw new SekaiAuthError(
+        `ID token issuer mismatch: ${claims.iss}`,
+        { code: 'invalid_id_token' },
+      );
+    }
+
+    // sub：用户身份本身。缺了它，调用方拿到的是 `claims.sub === undefined` ——
+    // 而应用通常拿 sub 当主键，于是所有缺 sub 的 token 都映射到**同一个**用户。
+    // OIDC Core §2 把它列为 REQUIRED。
+    if (typeof claims.sub !== 'string' || claims.sub === '') {
+      throw new SekaiAuthError('ID token is missing sub', { code: 'invalid_id_token' });
+    }
+
+    // aud：必须包含本 client
+    const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+    if (!audiences.includes(this.clientId)) {
+      throw new SekaiAuthError('ID token audience does not include this client', {
+        code: 'invalid_id_token',
+      });
+    }
+
+    /*
+     * azp（authorized party）—— OIDC Core §3.1.3.7。
+     *
+     * `aud` 只说明「这个 token 可以被谁接受」，`azp` 说明「它是为谁签的」。
+     * 两者不同时，一个签给**别的客户端**、只是顺带把我们列进 aud 的 token，
+     * 在只查 aud 的实现里会被当成「这个用户在我们这里登录了」。
+     *
+     * 规范：多 aud 时 SHOULD 验 azp 存在；azp 存在时 SHOULD 验它等于自己的
+     * client_id。这里两条都做成硬性检查 —— 这是个给别人用的 SDK，
+     * 「SHOULD」在这种位置上没有放宽的理由。
+     */
+    if (claims.azp !== undefined && claims.azp !== this.clientId) {
+      throw new SekaiAuthError(
+        `ID token azp is another client: ${claims.azp}`,
+        { code: 'invalid_id_token' },
+      );
+    }
+    if (audiences.length > 1 && claims.azp === undefined) {
+      throw new SekaiAuthError(
+        'ID token has multiple audiences but no azp',
+        { code: 'invalid_id_token' },
+      );
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    if (typeof claims.exp !== 'number' || claims.exp + clockSkewSec < now) {
+      throw new SekaiAuthError('ID token has expired', { code: 'invalid_id_token' });
+    }
+    // iat 是 REQUIRED（§2）。此前只在它**存在**时检查「不能是未来」——
+    // 于是干脆不带 iat 的 token 一路畅通。
+    if (typeof claims.iat !== 'number') {
+      throw new SekaiAuthError('ID token is missing iat', { code: 'invalid_id_token' });
+    }
+    if (claims.iat - clockSkewSec > now) {
+      throw new SekaiAuthError('ID token was issued in the future', {
+        code: 'invalid_id_token',
+      });
+    }
+
+    // nonce：发过就必须对得上
+    if (nonce) {
+      if (claims.nonce !== nonce) {
+        throw new SekaiAuthError('ID token nonce mismatch — possible token injection', {
+          code: 'invalid_id_token',
+        });
+      }
+    }
+
+    return claims;
+  }
+
+  /** 从显式配置的 authorize 端点推出 issuer（`…/oauth/authorize` → `…`）。 */
+  _issuerFromEndpoints() {
+    if (!this._endpoints?.authorize) return null;
+    try {
+      const url = new URL(this._endpoints.authorize);
+      return url.origin;
+    } catch {
+      return null;
+    }
+  }
+
+  /** 用 issuer 的 JWKS 验 ID Token 的签名。 */
+  async _verifyIdTokenSignature(idToken, header) {
+    // 算法白名单先判，早于任何网络请求。
+    // 明确只支持这两种非对称算法：`alg: none` 与对称算法一律拒绝 ——
+    // 后者会让「把 JWKS 里的公钥当成 HMAC 密钥」的经典攻击成立。
+    if (!ID_TOKEN_ALGS[header.alg]) {
+      throw new SekaiAuthError(`Unsupported ID token algorithm: ${header.alg ?? 'none'}`, {
+        code: 'invalid_id_token',
+      });
+    }
+
+    const jwks = await this._fetchJwks();
+    const key = jwks.find(
+      (k) => (!header.kid || k.kid === header.kid) && (!header.alg || !k.alg || k.alg === header.alg),
+    );
+    if (!key) {
+      throw new SekaiAuthError(
+        `No JWKS key matches ID token header (kid=${header.kid ?? 'none'})`,
+        { code: 'invalid_id_token' },
+      );
+    }
+
+    const { importParams, verifyParams } = ID_TOKEN_ALGS[header.alg];
+
+    let publicKey;
+    try {
+      publicKey = await crypto.subtle.importKey('jwk', key, importParams, false, ['verify']);
+    } catch (err) {
+      throw new SekaiAuthError(`Cannot import JWKS key: ${err?.message ?? err}`, {
+        code: 'invalid_id_token',
+        cause: err,
+      });
+    }
+
+    const parts = String(idToken).split('.');
+    const ok = await crypto.subtle.verify(
+      verifyParams,
+      publicKey,
+      base64UrlDecode(parts[2]),
+      new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
+    );
+    if (!ok) {
+      throw new SekaiAuthError('ID token signature is invalid', { code: 'invalid_id_token' });
+    }
+  }
+
+  /** 取 JWKS 并缓存（签名密钥会轮换，但一次会话内不必重复拉）。 */
+  async _fetchJwks() {
+    if (this._jwksPromise) return this._jwksPromise;
+
+    this._jwksPromise = (async () => {
+      const endpoints = await this.getEndpoints();
+      const uri =
+        endpoints.jwks ??
+        (this.issuer ? `${this.issuer.replace(/\/$/, '')}/.well-known/jwks.json` : null) ??
+        (this._issuerFromEndpoints()
+          ? `${this._issuerFromEndpoints()}/.well-known/jwks.json`
+          : null);
+
+      if (!uri) {
+        throw new SekaiAuthError('Cannot determine jwks_uri for ID token validation', {
+          code: 'invalid_config',
+        });
+      }
+
+      const response = await this._fetch(uri);
+      if (!response.ok) {
+        throw new SekaiAuthError(`JWKS fetch failed: HTTP ${response.status}`, {
+          code: 'jwks_failed',
+          status: response.status,
+        });
+      }
+      const doc = await response.json();
+      if (!Array.isArray(doc?.keys)) {
+        throw new SekaiAuthError('JWKS document has no keys array', { code: 'jwks_failed' });
+      }
+      return doc.keys;
+    })().catch((err) => {
+      // 失败不缓存，下次可重试
+      this._jwksPromise = null;
+      throw err;
+    });
+
+    return this._jwksPromise;
   }
 
   // ------------------------------------------------------------------- tokens
@@ -396,7 +693,7 @@ class SekaiAuth {
   async _postToken(url, body) {
     let response;
     try {
-      response = await fetch(url, {
+      response = await this._fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams(body),
@@ -460,7 +757,7 @@ class SekaiAuth {
     }
 
     try {
-      const response = await fetch(endpoints.userinfo, {
+      const response = await this._fetch(endpoints.userinfo, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
@@ -536,7 +833,7 @@ class SekaiAuth {
         const fire = (token, hint) => {
           if (!token) return;
           try {
-            void fetch(url, {
+            void this._fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
               body: new URLSearchParams({
@@ -558,7 +855,7 @@ class SekaiAuth {
     }
 
     this._clearTokens();
-    if (redirectTo) globalThis.location.href = redirectTo;
+    if (redirectTo) await this._navigate(redirectTo);
   }
 
   /** 清空 token 与缓存的用户信息，但不动正在进行的 PKCE 流程。 */
@@ -575,7 +872,10 @@ class SekaiAuth {
    */
   _clearPkce(includeVerifier = true) {
     this._session.removeItem(this.keys.state);
-    if (includeVerifier) this._session.removeItem(this.keys.codeVerifier);
+    if (includeVerifier) {
+      this._session.removeItem(this.keys.codeVerifier);
+      this._session.removeItem(this.keys.nonce);
+    }
   }
 }
 
@@ -601,7 +901,7 @@ const SEKAI_PASS_ISSUER = 'https://id.nightcord.de5.net';
 
 
   // --- IIFE bundle footer (generated by scripts/build.mjs) ---
-  const SekaiAuthSDK = { REFRESH_SKEW_MS, DEFAULT_EXPIRES_IN_S, randomHex, base64UrlEncode, computeCodeChallenge, normalizeProfile, SekaiAuthError, SekaiAuth, createSekaiAuth, SEKAI_PASS_ENDPOINTS, SEKAI_PASS_ISSUER };
+  const SekaiAuthSDK = { REFRESH_SKEW_MS, DEFAULT_EXPIRES_IN_S, randomHex, base64UrlEncode, computeCodeChallenge, normalizeProfile, SekaiAuthError, SekaiAuth, createSekaiAuth, SEKAI_PASS_ENDPOINTS, SEKAI_PASS_ISSUER, decodeJwtPayload };
   global.SekaiAuthSDK = SekaiAuthSDK;
   // 兼容旧的全局名：nightcord 过去用 window.SekaiPassAuth 作为构造器
   global.SekaiPassAuth = SekaiAuth;

@@ -1,0 +1,63 @@
+/* @sekai-vendor @sekai/design@v0.1.0 tokens/world-night.css */
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: 2026 The 25-ji-code-de Team */
+
+/* ============================================================
+   World: NIGHT  —  derived from nightcord
+   ------------------------------------------------------------
+   Register: ambient. Violet field, mid chroma, white-at-low-alpha
+   hairlines, softer radii, the mono voice reserved for meta.
+   Use for: nightcord, 25ji-sagyo, stickers — anything the user
+   sits inside for a long time.
+   ============================================================ */
+
+.world-night,
+:root.world-night {
+  /* Canvas — descends darker as it rises. Elevation is carried by
+     shadow and hairline, not by fill lightness. */
+  --sekai-canvas: 80 71 106; /* #50476a */
+  --sekai-surface: 63 53 91; /* #3f355b — sidebar, composer */
+  --sekai-surface-raised: 43 38 51; /* #2b2633 — modals, attachments */
+  --sekai-surface-sunken: 30 27 36; /* #1e1b24 — inputs, wells */
+  --sekai-surface-hover: 61 55 80; /* #3d3750 */
+
+  /* Lines — hairlines are white at low alpha; structural dividers are
+     the dark plum bar-rule. These genuinely differ here. */
+  --sekai-line: 255 255 255;
+  --sekai-line-a: 0.08;
+  --sekai-line-strong: 255 255 255;
+  --sekai-line-strong-a: 0.2;
+  --sekai-divider: 43 38 51; /* #2b2633 */
+  --sekai-divider-a: 1;
+
+  /* Foreground */
+  --sekai-fg: 255 255 255;
+  --sekai-fg-muted: 189 189 189; /* #bdbdbd */
+  --sekai-fg-subtle: 136 136 136; /* #888 */
+  --sekai-fg-on-accent: 255 255 255; /* white text on the deep accent */
+
+  /* Accent — nightcord violet. Same two roles as world-system:
+     `accent` is the bright interactive one (#a78bfa), `accent-deep`
+     is the structural strip colour (#7c6fac). */
+  --sekai-accent: 167 139 250; /* #a78bfa */
+  --sekai-accent-hover: 196 181 253; /* #c4b5fd */
+  --sekai-accent-deep: 124 111 172; /* #7c6fac */
+  --sekai-accent-fill: 124 111 172; /* fills use the deeper one */
+
+  /* Player micro-ramp — nightcord's own hand-tuned pair. */
+  --sekai-surface-card: 47 39 63; /* #2f273f */
+  --sekai-surface-card-live: 53 46 70; /* #352e46 */
+
+  /* Scrim */
+  --sekai-scrim: 20 20 25;
+  --sekai-scrim-a: 0.92;
+
+  /* Radius register: this world prefers the softer end. */
+  --sekai-radius-control: var(--sekai-radius-sm); /* 6px */
+  --sekai-radius-panel: var(--sekai-radius-md); /* 8px */
+
+  /* Control voice: human. The mono voice stays on meta and labels. */
+  --sekai-control-transform: none;
+  --sekai-control-tracking: var(--sekai-tracking-none);
+  --sekai-control-weight: var(--sekai-weight-semibold);
+}

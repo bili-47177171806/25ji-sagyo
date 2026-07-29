@@ -111,6 +111,27 @@
         return false;
       }
     }
+
+    static async getLeaderboard(boardId, limit = 20, offset = 0) {
+      const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+      return this.request(
+        `/user/leaderboards/${encodeURIComponent(boardId)}?${params.toString()}`,
+      );
+    }
+
+    static async getLeaderboardProfile() {
+      return this.request('/user/leaderboard-profile');
+    }
+
+    static async updateLeaderboardProfile(showProfile, displayName) {
+      const body = { show_profile: Boolean(showProfile) };
+      const normalizedName = String(displayName || '').trim();
+      if (normalizedName) body.display_name = normalizedName;
+      return this.request('/user/leaderboard-profile', {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+    }
   }
 
   // Export to global

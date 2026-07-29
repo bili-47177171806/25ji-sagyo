@@ -1,0 +1,210 @@
+/* @sekai-vendor @sekai/design@v0.1.0 tokens/contract.css */
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: 2026 The 25-ji-code-de Team */
+
+/* ============================================================
+   SEKAI Design System — Layer 1: The semantic contract
+   ------------------------------------------------------------
+   Every world MUST define every token in this file. Component CSS
+   is only ever allowed to reference these names — never a world
+   file, never a raw hex.
+
+   COLOR RULE (one rule, no exceptions):
+     Palette tokens hold a SPACE-SEPARATED RGB TRIPLET and are
+     always consumed as  rgb(var(--sekai-x) / <alpha>).
+     There are no hex twins. This is deliberate: sekai-pass's own
+     CSS_REFACTOR_PLAN.md documents --error-color drifting between
+     `#e57373` and `229 115 115` because two spellings existed.
+     One spelling cannot drift.
+
+   Two companions to that rule:
+     --sekai-*-a          a bare number, the world's default alpha
+                          for that role (line, scrim).
+     --sekai-hairline*    a ready-made `1px solid rgb(...)` shorthand,
+                          because it appears ~50 times and every
+                          hand-written copy is a chance to drift.
+   ============================================================ */
+
+:root {
+  /* Fallback world = world-system. Attaching .world-system or
+     .world-night to <html>/<body> overrides these wholesale. */
+
+  /* ---------- Canvas ladder ----------
+     One rule, both worlds: RELATIVE TO THE PLANE IT SITS ON, raised
+     catches more light and is lighter; recessed catches less and is
+     darker. See DESIGN_SYSTEM.md §0 principle 2.
+
+       world-night   #50476a canvas (the desk)
+                     #3f355b sidebar — a trough cut into it
+                     #50476a .channel — a chip lying in that trough
+                     #2b2633 attachment — a deeper well
+       world-system  #0b0b0e canvas (an instrument face, dark room)
+                     #17171c panel mounted on it, catching light
+                     #111114 input — a well cut into the panel
+
+     The two worlds differ in ambient level, not in direction.
+
+     ONLY DIFFERENCES ARE PHYSICAL. A plane has no absolute height,
+     the same way a position has no absolute potential energy. These
+     values are not elevations; they are one chosen frame. The SAME
+     value reads as raised or as recessed depending only on what is
+     under it — #2b2633 over the scrim is a modal floating up, and
+     over the #50476a canvas it is a well cut down. Both readings are
+     correct simultaneously.
+
+     Which is why the scrim is load-bearing: rgb(20 20 25 / .92)
+     crushes the canvas to near-black and thereby RESETS THE ZERO, so
+     the modal reads as raised without changing its own colour. Remove
+     the scrim and that same modal becomes a pit. The scrim is
+     structure, not atmosphere.
+
+     Note on names: `-raised` / `-sunken` bake a direction into the
+     name — an absolute claim that contradicts the paragraph above.
+     Values are right; read the names as "second / third plane from
+     the canvas", not as a direction. See DESIGN_SYSTEM.md §10.1. */
+  --sekai-canvas: 11 11 14; /* page field */
+  --sekai-surface: 23 23 28; /* default panel sitting on the canvas */
+  --sekai-surface-raised: 32 32 37; /* a plane above --sekai-surface */
+  --sekai-surface-sunken: 17 17 20; /* a well: inputs, code, tracks */
+  --sekai-surface-hover: 42 42 48; /* solid hover fill */
+
+  /* ---------- Lines ----------
+     Three jobs, not one:
+       line      hairline around cards, inputs, chips
+       strong    the same hairline, emphasized (hover / focus-adjacent)
+       divider   structural rules between layout regions (bar bottoms,
+                 sidebar edges). world-system draws these with the same
+                 grey as `line`; world-night draws them dark while its
+                 `line` is white-at-low-alpha. Collapsing the two would
+                 make one of the worlds wrong. */
+  --sekai-line: 42 42 48;
+  --sekai-line-a: 1;
+  --sekai-line-strong: 61 61 70;
+  --sekai-line-strong-a: 1;
+  --sekai-divider: 42 42 48;
+  --sekai-divider-a: 1;
+
+  /* ---------- Foreground ---------- */
+  --sekai-fg: 226 226 230;
+  --sekai-fg-muted: 117 117 122;
+  --sekai-fg-subtle: 90 90 96;
+  --sekai-fg-on-accent: 26 26 30; /* text sitting ON an accent fill */
+
+  /* ---------- Accent ----------
+     Two accents, two jobs — this is the shared shape both source
+     designs already had:
+       accent      bright, interactive: focus rings, icons, CTAs
+       accent-deep structural: the 3-4px strips, gradient caps      */
+  --sekai-accent: 164 140 214;
+  --sekai-accent-hover: 189 166 232;
+  --sekai-accent-deep: 89 68 131;
+
+  /* Which accent a SOLID fill uses, and what colour survives on top of
+     it. These differ per world because the worlds' accents differ in
+     lightness: world-system fills with its light accent and sets dark
+     text (Pass's own `--button-color: #1a1a1e`); world-night fills with
+     the deeper accent and sets white (nightcord's own .sekai-update-btn).
+     Both land on legible contrast; neither is a compromise. */
+  --sekai-accent-fill: 164 140 214;
+
+  /* ---------- Signal & semantics ----------
+     Identical across worlds on purpose: a system whose "danger"
+     changes hue per theme is two systems. */
+  --sekai-signal: 255 85 0; /* live / recording / AI. Never decorative. */
+  --sekai-danger: 229 115 115;
+  --sekai-success: 129 199 132;
+  --sekai-warning: 250 166 26;
+  --sekai-info: 56 189 248;
+
+  /* ---------- Card surface ----------
+     The plane a small object sits on when it is lying ON the canvas
+     rather than cut into it: link cards, the audio player body.
+     nightcord names this `--sekai-bg-card` (#2f273f) and gives it a
+     second step for when the object is LIVE (#352e46).
+
+     It is a real plane, not a rung of the canvas ladder — snapping it
+     to the nearest rung flattens the two-step ramp, and because
+     --surface-hover is a neutral grey-violet it also sends the live
+     state toward "under the cursor" instead of "awake". */
+  --sekai-surface-card: 28 28 33;
+  --sekai-surface-card-live: 35 35 41;
+
+  /* ---------- Identity tints ----------
+     Eight colours for telling people apart, as a printed colour-coded
+     tag: a bright field with dark ink of the same hue. That is what a
+     cable marker or an equipment label looks like, and glancing across
+     a roster is exactly the job they do.
+
+     Deliberately NOT in the world files. A person has to stay the same
+     colour in nightcord, in hub and in Pass, or the colour stops being
+     an identity. These are the only palette tokens a world may not
+     re-point.
+
+     Generated, not picked: hue anchored on SEKAI's own 293°, eight
+     even 45° steps, one lightness so every one is equally legible.
+     Re-run scripts/derive-identity-tints.mjs to change or verify —
+     it also prints the contrast audit and the neighbour separation. */
+  --sekai-identity-1: 175 151 255; /* H 293° — the house hue */
+  --sekai-identity-2: 230 131 203; /* H 338° */
+  --sekai-identity-3: 251 129 125; /* H  23° */
+  --sekai-identity-4: 232 150 41; /* H  68° */
+  --sekai-identity-5: 172 180 46; /* H 113° */
+  --sekai-identity-6: 64 199 134; /* H 158° */
+  --sekai-identity-7: 0 197 212; /* H 203° */
+  --sekai-identity-8: 83 177 255; /* H 248° */
+
+  --sekai-identity-1-ink: 65 51 105;
+  --sekai-identity-2-ink: 90 40 77;
+  --sekai-identity-3-ink: 100 38 38;
+  --sekai-identity-4-ink: 93 51 0;
+  --sekai-identity-5-ink: 65 68 0;
+  --sekai-identity-6-ink: 0 79 46;
+  --sekai-identity-7-ink: 0 76 85;
+  --sekai-identity-8-ink: 13 66 108;
+
+  /* ---------- Scrim ---------- */
+  --sekai-scrim: 20 20 25;
+  --sekai-scrim-a: 0.92;
+
+  /* ---------- Radius register ----------
+     The one non-colour thing a world is allowed to re-point. Controls
+     are 4px in the terminal register, 6px in the ambient one; panels
+     agree at 8px. Components reference these, not the raw scale, so a
+     world shifts its whole feel without touching component CSS. */
+  --sekai-radius-control: var(--sekai-radius-xs);
+  --sekai-radius-panel: var(--sekai-radius-md);
+
+  /* ---------- Control voice ----------
+     Whether buttons and tabs speak in the machine voice. Pass's
+     buttons are UPPERCASE / 700 / 1px-tracked; nightcord's are
+     sentence-case / 600. Same component, world-appropriate register —
+     this is the token that carries that difference, so no component
+     ever needs a world-specific rule. */
+  --sekai-control-transform: uppercase;
+  --sekai-control-tracking: var(--sekai-tracking-wider);
+  --sekai-control-weight: var(--sekai-weight-bold);
+
+  /* ---------- Derived shorthands ---------- */
+  --sekai-hairline: 1px solid rgb(var(--sekai-line) / var(--sekai-line-a));
+  --sekai-hairline-strong: 1px solid
+    rgb(var(--sekai-line-strong) / var(--sekai-line-strong-a));
+  --sekai-hairline-divider: 1px solid
+    rgb(var(--sekai-divider) / var(--sekai-divider-a));
+  --sekai-focus-ring: 0 0 0 2px rgb(var(--sekai-accent) / 0.15);
+  --sekai-glow-accent: 0 4px 20px rgb(var(--sekai-accent) / 0.3);
+  --sekai-glow-signal: 0 0 4px rgb(var(--sekai-signal) / 1);
+
+  /* ---------- Device sub-theme ----------
+     The walkman/DAW audio player is deliberately a FOREIGN OBJECT:
+     a physical device sitting inside the UI, not a surface of it.
+     It keeps its matte-black chassis in both worlds. Scoped to
+     .sekai-device — see DESIGN_SYSTEM.md §6.7. */
+  --sekai-device-chassis: 30 30 36; /* #1e1e24 */
+  --sekai-device-panel: 35 35 41; /* #232329 */
+  --sekai-device-screen: 10 10 12; /* #0a0a0c */
+  --sekai-device-line: 51 51 51; /* #333 */
+  --sekai-device-fg: 208 208 208;
+  --sekai-device-fg-dim: 80 80 80;
+  --sekai-device-key: 51 51 51;
+  --sekai-device-key-hover: 68 68 68;
+}

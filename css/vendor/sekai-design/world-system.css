@@ -1,0 +1,61 @@
+/* @sekai-vendor @sekai/design@v0.1.0 tokens/world-system.css */
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: 2026 The 25-ji-code-de Team */
+
+/* ============================================================
+   World: SYSTEM  —  derived from sekai-pass
+   ------------------------------------------------------------
+   Register: terminal. Near-black field, low chroma, solid grey
+   hairlines, tight radii, the mono voice used liberally.
+   Use for: SEKAI Pass, hub, docs, dashboards, anything that
+   should read as infrastructure.
+   ============================================================ */
+
+.world-system,
+:root.world-system {
+  /* Canvas — ascends lighter */
+  --sekai-canvas: 11 11 14; /* #0b0b0e */
+  --sekai-surface: 23 23 28; /* #17171c */
+  --sekai-surface-raised: 32 32 37; /* #202025 */
+  --sekai-surface-sunken: 17 17 20; /* #111114 */
+  --sekai-surface-hover: 42 42 48; /* #2a2a30 */
+
+  /* Lines — solid grey; divider is the same grey as the hairline */
+  --sekai-line: 42 42 48; /* #2a2a30 */
+  --sekai-line-a: 1;
+  --sekai-line-strong: 61 61 70;
+  --sekai-line-strong-a: 1;
+  --sekai-divider: 42 42 48;
+  --sekai-divider-a: 1;
+
+  /* Foreground */
+  --sekai-fg: 226 226 230; /* #e2e2e6 */
+  --sekai-fg-muted: 117 117 122; /* #75757a */
+  --sekai-fg-subtle: 90 90 96;
+  --sekai-fg-on-accent: 26 26 30; /* #1a1a1e — dark text on light accent */
+
+  /* Accent — Pass violet */
+  --sekai-accent: 164 140 214; /* #a48cd6 */
+  --sekai-accent-hover: 189 166 232; /* #bda6e8 */
+  --sekai-accent-deep: 89 68 131; /* #594483 */
+  --sekai-accent-fill: 164 140 214;
+
+  /* Player micro-ramp — same relationship as world-night's, moved
+     onto this world's near-black field: one step above --surface,
+     one more when live. */
+  --sekai-surface-card: 28 28 33; /* #1c1c21 */
+  --sekai-surface-card-live: 35 35 41; /* #232329 */
+
+  /* Scrim */
+  --sekai-scrim: 20 20 25;
+  --sekai-scrim-a: 0.92;
+
+  /* Radius register: this world prefers the tight end of the scale. */
+  --sekai-radius-control: var(--sekai-radius-xs); /* 4px */
+  --sekai-radius-panel: var(--sekai-radius-md); /* 8px */
+
+  /* Control voice: machine. */
+  --sekai-control-transform: uppercase;
+  --sekai-control-tracking: var(--sekai-tracking-wider);
+  --sekai-control-weight: var(--sekai-weight-bold);
+}
